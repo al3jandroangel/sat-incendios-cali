@@ -65,23 +65,28 @@ python -m http.server 8123 --directory web
 
 ## Automatización
 
-El sistema se actualiza **dos veces al día: 6:00 am y 12:00 m** (hora Colombia).
-La corrida del mediodía es importante porque en Cali el viento aumenta
-considerablemente después del mediodía, elevando el riesgo de propagación; el
-panel muestra explícitamente el viento máximo y la humedad mínima de la franja
-12:00–18:00.
+El sistema se actualiza **cada 6 horas** (listo hacia las 00:00, 06:00, 12:00
+y 18:00 hora Colombia), con tres capas de garantía porque los crons de GitHub
+se retrasan u omiten con frecuencia:
 
-- **En línea (GitHub Pages)**: repositorio
-  https://github.com/al3jandroangel/sat-incendios-cali con workflow programado
-  que regenera las alertas, guarda los históricos y publica en
-  https://al3jandroangel.github.io/sat-incendios-cali/. Los crons corren a las
-  05:43/06:13 y 11:43/12:13 hora Colombia (principal + respaldo): GitHub
-  retrasa u omite con frecuencia los crons del minuto :00, así que se programa
-  antes de la hora objetivo con un segundo intento después. Si aun así un día
-  no corre, se puede lanzar a mano: pestaña Actions → "Actualizar alertas SAT"
-  → Run workflow.
-- **Local (Windows)**: `run_daily.bat` + Programador de tareas, dos tareas
-  (6:00 y 12:00; instrucciones dentro del .bat).
+1. **Cron principal de GitHub**: 23:43/05:43/11:43/17:43 hora Colombia
+   (minutos fuera de pico, antes de la hora objetivo).
+2. **Cron de respaldo de GitHub**: 00:13/06:13/12:13/18:13, por si el
+   principal se omite (el workflow es idempotente y con grupo de concurrencia).
+3. **Plan B — tarea programada de Windows** «SAT Cali Plan B»: ejecuta
+   `plan_b_dispatch.bat` cada 6 h (05:50/11:50/17:50/23:50 hora Colombia) y
+   dispara el workflow directamente por la API de GitHub, inmune a los
+   retrasos de sus crons. Requiere el PC encendido; usa el token del
+   Administrador de credenciales de Windows. Nota: la tarea corre en hora del
+   PC (Los Ángeles), así que con el cambio de horario de EE.UU. se desplaza
+   1 h respecto a Colombia. Para eliminarla:
+   `schtasks /delete /tn "SAT Cali Plan B"`.
+
+La actualización del mediodía importa especialmente: en Cali el viento aumenta
+después del mediodía y el panel muestra viento máximo y humedad mínima de la
+franja 12:00–18:00. Fallback manual: pestaña Actions → "Actualizar alertas
+SAT" → Run workflow. El portal vive en
+https://al3jandroangel.github.io/sat-incendios-cali/
 - **Puntos calientes NASA FIRMS**: activos (VIIRS Suomi-NPP y NOAA-20, últimas
   48 h). El MAP_KEY se lee de `data/firms_key.txt` en local (excluido del
   repositorio por .gitignore) y del secret `FIRMS_MAP_KEY` en GitHub Actions.
@@ -120,7 +125,10 @@ reporta >20 m/s sostenidos y se filtra como defectuoso.
 - El clima ERA5 tiene resolución ~10 km (9 celdas cubren el distrito): las alertas
   capturan la variación día a día, y el detalle espacial fino lo aportan las capas
   estáticas (pendiente, combustibles, vías). Los campos se interpolan
-  bilinealmente entre celdas para evitar bordes artificiales rectos.
+  bilinealmente entre celdas y la temperatura se **desescala orográficamente**
+  (gradiente −6.5 °C/km entre la elevación real del DEM de 10 m y la elevación
+  del modelo ERA5 interpolada — las celdas vecinas difieren hasta 2000 m), de
+  modo que el mapa sigue la topografía y no la malla del modelo.
 - Capas informativas del portal: estaciones meteorológicas IDEAM (observado vs
   modelo en el popup) y estaciones de bomberos (OpenStreetMap,
   `web/data/bomberos.geojson`).
