@@ -216,6 +216,46 @@ def make_overlay(grid, res=100.0):
     return [[lat0, lon0], [lat1, lon1]]
 
 
+def archivar_overlay(generado):
+    """Guarda una copia del mapa de alerta en historico/ (retención: 7 días).
+
+    El nombre lleva la fecha-hora de Colombia (alerta_2026-07-09_1200.png).
+    Los archivos con más de 7 días se eliminan; el commit del workflow
+    persiste tanto las adiciones como los borrados en el repositorio."""
+    hist_dir = os.path.join(paths.PROJ, "historico")
+    os.makedirs(hist_dir, exist_ok=True)
+
+    stamp = generado.replace(" ", "_").replace(":", "")
+    src = Image.open(os.path.join(WEBDATA, "alerta_overlay.png")).convert("RGBA")
+    fondo = Image.new("RGBA", src.size, (255, 255, 255, 255))
+    fondo.alpha_composite(src)
+    img = fondo.convert("RGB")
+    try:
+        from PIL import ImageDraw
+        d = ImageDraw.Draw(img)
+        texto = f"SAT Incendios Cali - {generado} (hora Colombia)"
+        d.rectangle([0, 0, 8 + 7 * len(texto), 26], fill=(13, 59, 46))
+        d.text((6, 6), texto, fill=(255, 255, 255))
+    except Exception:
+        pass
+    img.save(os.path.join(hist_dir, f"alerta_{stamp}.png"))
+
+    limite = (dt.datetime.strptime(generado[:10], "%Y-%m-%d")
+              - dt.timedelta(days=7))
+    borrados = 0
+    for f in os.listdir(hist_dir):
+        if f.startswith("alerta_") and f.endswith(".png"):
+            try:
+                fd = dt.datetime.strptime(f[7:17], "%Y-%m-%d")
+            except ValueError:
+                continue
+            if fd < limite:
+                os.remove(os.path.join(hist_dir, f))
+                borrados += 1
+    print(f"histórico: guardado alerta_{stamp}.png "
+          f"({borrados} antiguos eliminados)")
+
+
 def resumen_corregimientos(grid):
     stats = (grid.dropna(subset=["zona"]).groupby(["zona", "nivel"]).size()
              .unstack(fill_value=0)
@@ -334,7 +374,11 @@ def main():
                              np.where(prob >= meta["umbral_media"], "MEDIA",
                                       "BAJA"))
 
+    tz_col = dt.timezone(dt.timedelta(hours=-5))  # Colombia: UTC-5 fijo
+    generado = dt.datetime.now(tz_col).strftime("%Y-%m-%d %H:%M")
+
     bounds = make_overlay(grid)
+    archivar_overlay(generado)
     stats = resumen_corregimientos(grid)
     if resumen:
         write_estaciones_geojson(resumen, cells)
@@ -346,7 +390,7 @@ def main():
                    if e.get("precip_mm") is not None] or [None])
     out_meta = {
         "fecha": fecha,
-        "generado": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "generado": generado,
         "bounds": bounds,
         "celdas": {"total": int(len(grid)),
                    "ALTA": int(dist.get("ALTA", 0)),

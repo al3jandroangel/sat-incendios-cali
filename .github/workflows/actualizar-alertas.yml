@@ -29,12 +29,13 @@ jobs:
         env:
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
         run: python scripts/05_predict_daily.py
-      - name: Guardar histórico de estaciones en el repositorio
+      - name: Guardar históricos (estaciones y mapas PNG) en el repositorio
         run: |
           git config user.name "sat-bot"
           git config user.email "actions@github.com"
-          git add data/stations_history.csv data/model_at_stations.csv || true
-          git diff --cached --quiet || git commit -m "Histórico de estaciones $(date -u +%F_%H%M)"
+          git pull --rebase || true
+          git add -A data/stations_history.csv data/model_at_stations.csv historico || true
+          git diff --cached --quiet || git commit -m "Históricos $(date -u +%F_%H%M)"
           git push || true
       - uses: actions/upload-pages-artifact@v3
         with:

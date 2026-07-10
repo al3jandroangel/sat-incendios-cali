@@ -103,7 +103,7 @@ const fmt = n => n.toLocaleString('es-CO');
 
 fetch('data/alerta_meta.json').then(r => r.json()).then(meta => {
   document.getElementById('fecha-chip').textContent =
-    `Actualizado: ${meta.fecha} (${meta.generado})`;
+    `Actualizado: ${meta.generado} (hora Colombia)`;
 
   const c = meta.celdas, tot = c.total;
   const pct = k => (100 * c[k] / tot);
@@ -119,7 +119,7 @@ fetch('data/alerta_meta.json').then(r => r.json()).then(meta => {
   const est = meta.estaciones || {};
   const lluviaObs = (est.lluvia_observada_mm != null)
     ? `<br>📡 Lluvia <u>observada</u> estaciones: <b>${est.lluvia_observada_mm} mm</b>` +
-      `<span style="color:#5b6875"> (desde ${est.ventana || ''})</span>`
+      `<span style="color:#5b6875"> (desde ${est.ventana || ''} hora Colombia)</span>`
     : '';
   const tarde = (w.viento_tarde != null)
     ? `<br>🌬️ <b>Tarde (12-18 h):</b> viento hasta <b>${w.viento_tarde} km/h</b>` +
@@ -194,7 +194,7 @@ fetch('data/alerta_meta.json').then(r => r.json()).then(meta => {
             if (p.humedad_min != null) filas.push(`💧 Humedad mín: <b>${p.humedad_min} %</b>`);
             return L.circleMarker(latlng, {
               radius: 8, color: '#01579b', fillColor: '#0277bd', fillOpacity: .95, weight: 2
-            }).bindPopup(`<h3>📡 ${p.nombre}</h3>Red IDEAM · ventana ${p.ventana_desde} → ${p.ultima_obs}<br>` +
+            }).bindPopup(`<h3>📡 ${p.nombre}</h3>Red IDEAM · ventana ${p.ventana_desde} → ${p.ultima_obs} (hora Colombia)<br>` +
                          filas.join('<br>'));
           }
         }).addTo(map);

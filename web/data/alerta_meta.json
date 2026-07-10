@@ -1,6 +1,6 @@
 {
   "fecha": "2026-07-09",
-  "generado": "2026-07-09 17:01",
+  "generado": "2026-07-09 19:34",
   "bounds": [
     [
       3.273435421731155,
@@ -13,20 +13,20 @@
   ],
   "celdas": {
     "total": 56262,
-    "ALTA": 1131,
-    "MEDIA": 13672,
-    "BAJA": 41459
+    "ALTA": 2589,
+    "MEDIA": 17051,
+    "BAJA": 36622
   },
   "clima": {
     "tmax": 23.8,
-    "precip_hoy": 28.4,
-    "precip_30d": 275.1,
+    "precip_hoy": 15.9,
+    "precip_30d": 262.6,
     "dias_sin_lluvia": 0.0,
-    "viento_max": 7.8,
-    "radiacion": 14.5,
+    "viento_max": 7.9,
+    "radiacion": 15.3,
     "humedad_min": 68.0,
-    "viento_tarde": 8.1,
-    "humedad_tarde": 74.0
+    "viento_tarde": 8.3,
+    "humedad_tarde": 73.0
   },
   "estaciones": {
     "n": 3,
