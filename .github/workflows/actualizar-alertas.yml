@@ -4,12 +4,21 @@
 #   - (Opcional) Secret FIRMS_MAP_KEY para mostrar puntos calientes NASA FIRMS
 name: Actualizar alertas SAT
 
+# Los crons de GitHub en el minuto :00 se retrasan u omiten con frecuencia
+# (franja de máxima carga). Por eso: minutos "impares" que llegan ANTES de la
+# hora objetivo (6:00 am y 12:00 m de Colombia = UTC-5) y un respaldo ~30 min
+# después por si GitHub omite el primero. El workflow es idempotente.
 on:
   schedule:
-    - cron: "0 11 * * *"   # 06:00 hora de Colombia (UTC-5)
-    - cron: "0 17 * * *"   # 12:00 hora de Colombia: en Cali el viento aumenta
-                           # después del mediodía y con él el riesgo de incendio
+    - cron: "43 10 * * *"  # 05:43 Colombia -> portal listo hacia las 6:00 am
+    - cron: "13 11 * * *"  # 06:13 Colombia (respaldo mañana)
+    - cron: "43 16 * * *"  # 11:43 Colombia -> listo hacia las 12:00 m
+    - cron: "13 17 * * *"  # 12:13 Colombia (respaldo mediodía; viento vespertino)
   workflow_dispatch:
+
+concurrency:
+  group: sat-actualizacion
+  cancel-in-progress: false
 
 permissions:
   contents: write

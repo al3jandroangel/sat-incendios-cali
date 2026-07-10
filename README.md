@@ -73,8 +73,13 @@ panel muestra explícitamente el viento máximo y la humedad mínima de la franj
 
 - **En línea (GitHub Pages)**: repositorio
   https://github.com/al3jandroangel/sat-incendios-cali con workflow programado
-  (cron 11:00 y 17:00 UTC) que regenera las alertas, guarda el histórico de
-  estaciones y publica en https://al3jandroangel.github.io/sat-incendios-cali/
+  que regenera las alertas, guarda los históricos y publica en
+  https://al3jandroangel.github.io/sat-incendios-cali/. Los crons corren a las
+  05:43/06:13 y 11:43/12:13 hora Colombia (principal + respaldo): GitHub
+  retrasa u omite con frecuencia los crons del minuto :00, así que se programa
+  antes de la hora objetivo con un segundo intento después. Si aun así un día
+  no corre, se puede lanzar a mano: pestaña Actions → "Actualizar alertas SAT"
+  → Run workflow.
 - **Local (Windows)**: `run_daily.bat` + Programador de tareas, dos tareas
   (6:00 y 12:00; instrucciones dentro del .bat).
 - **Puntos calientes NASA FIRMS**: activos (VIIRS Suomi-NPP y NOAA-20, últimas
