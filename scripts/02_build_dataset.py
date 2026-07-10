@@ -75,6 +75,14 @@ def fetch_cell(lat, lon, start="2009-12-01", end="2023-12-31"):
     return data
 
 
+LAPSE = -0.0065  # gradiente térmico vertical (°C/m)
+
+
+def cell_elevation(lat, lon):
+    """Elevación del modelo ERA5 en la celda (para desescalado orográfico)."""
+    return float(fetch_cell(lat, lon).get("elevation", 0.0))
+
+
 def cell_dataframe(lat, lon):
     d = fetch_cell(lat, lon)["daily"]
     df = pd.DataFrame(d)
@@ -113,9 +121,14 @@ def _cell(key):
     return _CELLS[key]
 
 
-def weather_at(lat, lon, fecha):
+def weather_at(lat, lon, fecha, elev_punto=None):
     """Clima interpolado bilinealmente entre las 4 celdas ERA5 circundantes
-    (evita bordes rectos entre celdas de 0.1 grados)."""
+    (evita bordes rectos entre celdas de 0.1 grados).
+
+    Si se pasa elev_punto (m), la temperatura se desescala orográficamente con
+    el gradiente vertical estándar: las celdas ERA5 vecinas difieren hasta
+    2000 m de elevación de modelo, y sin este ajuste la temperatura formaría
+    rampas rectas entre centros de celda en vez de seguir la topografía."""
     ts = pd.Timestamp(fecha)
     out = {}
     for feat, col in _VARMAP.items():
@@ -128,6 +141,14 @@ def weather_at(lat, lon, fecha):
                 except KeyError:
                     return None
         out[feat] = float(interp.bilinear(vals, lat, lon))
+
+    if elev_punto is not None and np.isfinite(elev_punto):
+        elevs = {(la, lo): cell_elevation(la, lo)
+                 for la in interp.LATS for lo in interp.LONS}
+        elev_mod = float(interp.bilinear(elevs, lat, lon))
+        dT = LAPSE * (float(elev_punto) - elev_mod)
+        out["tmax"] += dT
+        out["tmean"] += dT
     return out
 
 
@@ -256,7 +277,8 @@ def main():
     print("Extrayendo clima diario (Open-Meteo/ERA5)...")
     met_rows = []
     for i, row in pts.iterrows():
-        w = weather_at(row.geometry.y, row.geometry.x, row["fecha"])
+        w = weather_at(row.geometry.y, row.geometry.x, row["fecha"],
+                       elev_punto=static.loc[i, "elevacion"])
         met_rows.append(w if w else {})
     met = pd.DataFrame(met_rows, index=pts.index)
 

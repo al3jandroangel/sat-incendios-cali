@@ -50,6 +50,7 @@ FEATS_MET = ["tmax", "tmean", "precip", "precip_3d", "precip_7d", "precip_30d",
              "humedad_min", "humedad_media"]
 SIGMA_M = 8000.0   # alcance espacial (gaussiano) de la corrección de estaciones
 W0 = 0.15          # encogimiento hacia "sin corrección" lejos de las estaciones
+LAPSE = -0.0065    # gradiente térmico vertical (°C/m) para desescalado orográfico
 
 
 def http_json(url, intentos=8):
@@ -117,18 +118,31 @@ def weather_cells():
                 "humedad_media": df.loc[hoy, "relative_humidity_2m_mean"],
                 "viento_tarde": float(tarde["wind_speed_10m"].max()),
                 "humedad_tarde": float(tarde["relative_humidity_2m"].min()),
+                "elev_modelo": float(resp.get("elevation", 0.0)),
             }
             time.sleep(3)
     return cells, str(hoy.date())
 
 
-def interp_met(cells, lats, lons):
-    """Interpola bilinealmente cada variable sobre coordenadas arbitrarias."""
+def interp_met(cells, lats, lons, elev_puntos=None):
+    """Interpola bilinealmente cada variable sobre coordenadas arbitrarias.
+
+    Con elev_puntos (m), desescala la temperatura por elevación real: las
+    celdas ERA5 difieren hasta 2000 m entre sí y la interpolación horizontal
+    sola produce rampas rectas que no siguen la topografía."""
     out = {}
     for f in FEATS_MET:
         vals = {k: v[f] for k, v in cells.items()}
         out[f] = interp.bilinear_frame(vals, lats, lons)
-    return pd.DataFrame(out)
+    df = pd.DataFrame(out)
+    if elev_puntos is not None:
+        elevs = {k: v["elev_modelo"] for k, v in cells.items()}
+        elev_mod = interp.bilinear_frame(elevs, lats, lons)
+        dT = LAPSE * (np.asarray(elev_puntos, dtype=float) - elev_mod)
+        dT = np.where(np.isfinite(dT), dT, 0.0)
+        df["tmax"] = df["tmax"] + dT
+        df["tmean"] = df["tmean"] + dT
+    return df
 
 
 # --------------------------------------------------- corrección por estaciones
@@ -142,7 +156,8 @@ def station_corrections(grid, cells, fecha, resumen):
     # 1. registrar los valores del modelo de HOY en cada estación (histórico)
     rows = []
     for cod, info in stations.ESTACIONES.items():
-        m = interp_met(cells, np.array([info["lat"]]), np.array([info["lon"]]))
+        m = interp_met(cells, np.array([info["lat"]]), np.array([info["lon"]]),
+                       elev_puntos=np.array([info["elev"]]))
         rows.append({"fecha": fecha, "estacion": cod,
                      "tmax_mod": round(float(m["tmax"][0]), 2),
                      "precip_mod": round(float(m["precip"][0]), 2)})
@@ -180,7 +195,9 @@ def station_corrections(grid, cells, fecha, resumen):
 def write_estaciones_geojson(resumen, cells):
     feats = []
     for e in resumen:
-        m = interp_met(cells, np.array([e["lat"]]), np.array([e["lon"]]))
+        elev = stations.ESTACIONES.get(e["codigo"], {}).get("elev")
+        m = interp_met(cells, np.array([e["lat"]]), np.array([e["lon"]]),
+                       elev_puntos=(np.array([elev]) if elev else None))
         props = dict(e)
         props["modelo_tmax"] = round(float(m["tmax"][0]), 1)
         props["modelo_precip_hoy"] = round(float(m["precip"][0]), 1)
@@ -345,7 +362,8 @@ def main():
         print(f"  aviso: estaciones no disponibles hoy: {e}")
         resumen = []
 
-    met = interp_met(cells, grid["lat"].to_numpy(), grid["lon"].to_numpy())
+    met = interp_met(cells, grid["lat"].to_numpy(), grid["lon"].to_numpy(),
+                     elev_puntos=grid["elevacion"].to_numpy())
 
     # La corrección de sesgo está DESACTIVADA por defecto: el modelo se entrenó
     # con ERA5, así que su sesgo sistemático (validado en 06_validate_era5.py:

@@ -31,9 +31,12 @@ MIN_DIAS_CORRECCION = 7
 MAX_VIENTO_MS = 20.0
 
 ESTACIONES = {
-    "0026085160": {"nombre": "Siloé", "lat": 3.425278, "lon": -76.561111},
-    "0026055120": {"nombre": "Universidad del Valle", "lat": 3.378, "lon": -76.533889},
-    "0026085170": {"nombre": "Base Aérea M.F. Suárez", "lat": 3.4543, "lon": -76.4997},
+    "0026085160": {"nombre": "Siloé", "lat": 3.425278, "lon": -76.561111,
+                   "elev": 1050.0},
+    "0026055120": {"nombre": "Universidad del Valle", "lat": 3.378,
+                   "lon": -76.533889, "elev": 996.0},
+    "0026085170": {"nombre": "Base Aérea M.F. Suárez", "lat": 3.4543,
+                   "lon": -76.4997, "elev": 956.0},
 }
 SENSORES = {"0240": "precip", "0068": "temp", "0069": "tmax",
             "0070": "tmin", "0103": "viento", "0027": "humedad"}
