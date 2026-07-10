@@ -31,7 +31,7 @@ web/index.html         → geoportal Leaflet (archivos 100% estáticos)
 
 | Componente        | Variables                                                        | Fuente |
 |-------------------|------------------------------------------------------------------|--------|
-| Clima (dinámico)  | tmax, tmedia, lluvia día/3d/7d/30d, días sin lluvia, viento, radiación, ET0 | Open-Meteo (ERA5 histórico, pronóstico diario) |
+| Clima (dinámico)  | tmax, tmedia, lluvia día/3d/7d/30d, días sin lluvia, viento máx, radiación, ET0, **humedad relativa mín/media** | Open-Meteo (ERA5 histórico, pronóstico diario) |
 | Relieve           | elevación, pendiente                                             | DTM radar 2.5 m (DTMCaliOK.tif) |
 | Vegetación        | tipo (ctc), duración (cdc), carga (ccc), susceptibilidad (SUSC)  | Estudio Urrutia 2018 / protocolo IDEAM |
 | Accesibilidad     | distancia a vías (todas y principales)                           | Jerarquización vial IDESC |
@@ -65,13 +65,21 @@ python -m http.server 8123 --directory web
 
 ## Automatización
 
-- **Local (Windows)**: `run_daily.bat` + Programador de tareas (instrucciones dentro).
-- **En línea (GitHub Pages)**: `.github/workflows/actualizar-alertas.yml` corre a las
-  06:00 (hora Colombia) todos los días, regenera las alertas y publica `web/`.
-  Solo hay que subir esta carpeta como repositorio y activar Pages → GitHub Actions.
-- **Puntos calientes NASA FIRMS**: opcional; solicitar MAP_KEY gratis en
-  https://firms.modaps.eosdis.nasa.gov/api/map_key/ y definirla como variable de
-  entorno `FIRMS_MAP_KEY` (o secret del repositorio).
+El sistema se actualiza **dos veces al día: 6:00 am y 12:00 m** (hora Colombia).
+La corrida del mediodía es importante porque en Cali el viento aumenta
+considerablemente después del mediodía, elevando el riesgo de propagación; el
+panel muestra explícitamente el viento máximo y la humedad mínima de la franja
+12:00–18:00.
+
+- **En línea (GitHub Pages)**: repositorio
+  https://github.com/al3jandroangel/sat-incendios-cali con workflow programado
+  (cron 11:00 y 17:00 UTC) que regenera las alertas, guarda el histórico de
+  estaciones y publica en https://al3jandroangel.github.io/sat-incendios-cali/
+- **Local (Windows)**: `run_daily.bat` + Programador de tareas, dos tareas
+  (6:00 y 12:00; instrucciones dentro del .bat).
+- **Puntos calientes NASA FIRMS**: activos (VIIRS Suomi-NPP y NOAA-20, últimas
+  48 h). El MAP_KEY se lee de `data/firms_key.txt` en local (excluido del
+  repositorio por .gitignore) y del secret `FIRMS_MAP_KEY` en GitHub Actions.
 
 ## Estaciones en tierra y validación de ERA5 (v2)
 
