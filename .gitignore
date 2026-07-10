@@ -1,0 +1,10 @@
+# claves personales — NUNCA subir
+data/firms_key.txt
+
+# caché pesada de clima histórico (solo se usa para reentrenar en local)
+data/weather_cache/
+
+# temporales
+__pycache__/
+*.pyc
+actualizacion.log

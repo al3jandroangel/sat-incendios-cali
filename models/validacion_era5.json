@@ -1,0 +1,18 @@
+{
+  "temperatura_diaria_skcl": {
+    "n": 1684,
+    "correlacion": 0.614,
+    "sesgo_modelo_menos_obs": -2.52,
+    "rmse": 2.69
+  },
+  "precip_anual_cali_ideam": {
+    "n": 42,
+    "correlacion": 0.399,
+    "sesgo_modelo_menos_obs": 2077.99,
+    "rmse": 2122.59
+  },
+  "diario_reciente_estaciones": {
+    "nota": "aún sin días completos acumulados; este contraste crece automáticamente con cada ejecución diaria"
+  },
+  "generado": "2026-07-09 16:33"
+}

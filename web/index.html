@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAT Incendios Forestales — Santiago de Cali</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --alta: #c62828; --media: #f9a825; --baja: #2e7d32;
+    --panel: #ffffff; --texto: #1c2430; --borde: #dde3ea;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font-family: "Segoe UI", system-ui, sans-serif; color: var(--texto); }
+  #map { position: absolute; inset: 0; }
+
+  header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
+    background: linear-gradient(90deg, #0d3b2e, #14532d);
+    color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  }
+  header .logo { font-size: 26px; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  header .sub { font-size: 12px; opacity: .85; }
+  #fecha-chip {
+    margin-left: auto; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+    padding: 5px 12px; border-radius: 16px; font-size: 12.5px; white-space: nowrap;
+  }
+
+  .panel {
+    position: absolute; z-index: 1000; background: var(--panel);
+    border: 1px solid var(--borde); border-radius: 10px;
+    box-shadow: 0 3px 14px rgba(0,0,0,.18); padding: 12px 14px;
+  }
+  #panel-resumen { top: 68px; left: 12px; width: 250px; }
+  #panel-resumen h2 { font-size: 13.5px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .4px; }
+  .nivel-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; }
+  .nivel-row .dot { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .nivel-row .pct { margin-left: auto; font-weight: 600; }
+  .barra { height: 10px; border-radius: 5px; overflow: hidden; display: flex; margin: 8px 0 4px; }
+  .barra div { height: 100%; }
+  #clima { border-top: 1px solid var(--borde); margin-top: 10px; padding-top: 8px; font-size: 12.5px; line-height: 1.7; }
+  #clima b { font-weight: 600; }
+  #modelo-nota { font-size: 11px; color: #5b6875; margin-top: 8px; border-top: 1px solid var(--borde); padding-top: 6px; }
+
+  #leyenda { bottom: 20px; left: 12px; font-size: 12.5px; }
+  #leyenda .nivel-row { margin: 4px 0; }
+
+  .leaflet-popup-content { font-size: 13px; }
+  .leaflet-popup-content h3 { margin: 0 0 6px; font-size: 14px; }
+  .mini-barra { height: 8px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 6px; width: 180px; }
+
+  @media (max-width: 640px) {
+    #panel-resumen { width: calc(100% - 24px); top: 86px; }
+    header h1 { font-size: 14px; } header .sub { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<header>
+  <div class="logo">🔥</div>
+  <div>
+    <h1>Sistema de Alertas Tempranas — Incendios Forestales</h1>
+    <div class="sub">Distrito Especial de Santiago de Cali · Modelo predictivo con clima en tiempo real</div>
+  </div>
+  <div id="fecha-chip">cargando…</div>
+</header>
+
+<div id="panel-resumen" class="panel">
+  <h2>Estado de alerta hoy</h2>
+  <div class="barra" id="barra-niveles"></div>
+  <div class="nivel-row"><span class="dot" style="background:var(--alta)"></span> Alerta ALTA <span class="pct" id="pct-alta">–</span></div>
+  <div class="nivel-row"><span class="dot" style="background:var(--media)"></span> Alerta MEDIA <span class="pct" id="pct-media">–</span></div>
+  <div class="nivel-row"><span class="dot" style="background:var(--baja)"></span> Alerta BAJA <span class="pct" id="pct-baja">–</span></div>
+  <div id="clima"></div>
+  <div id="modelo-nota"></div>
+</div>
+
+<div id="leyenda" class="panel">
+  <b>Leyenda</b>
+  <div class="nivel-row"><span class="dot" style="background:var(--alta)"></span> Amenaza alta</div>
+  <div class="nivel-row"><span class="dot" style="background:var(--media)"></span> Amenaza media</div>
+  <div class="nivel-row"><span class="dot" style="background:var(--baja)"></span> Amenaza baja</div>
+  <div class="nivel-row"><span class="dot" style="background:#7b1fa2; border-radius:50%"></span> Punto caliente 48 h</div>
+  <div class="nivel-row"><span class="dot" style="background:#0277bd; border-radius:50%"></span> Estación meteorológica</div>
+  <div class="nivel-row"><span style="flex:none; width:14px; text-align:center">🚒</span> Estación de bomberos</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map', { zoomControl: false }).setView([3.40, -76.58], 12);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 19, attribution: '© Esri' });
+
+const fmt = n => n.toLocaleString('es-CO');
+
+fetch('data/alerta_meta.json').then(r => r.json()).then(meta => {
+  document.getElementById('fecha-chip').textContent =
+    `Actualizado: ${meta.fecha} (${meta.generado})`;
+
+  const c = meta.celdas, tot = c.total;
+  const pct = k => (100 * c[k] / tot);
+  document.getElementById('pct-alta').textContent = pct('ALTA').toFixed(1) + ' %';
+  document.getElementById('pct-media').textContent = pct('MEDIA').toFixed(1) + ' %';
+  document.getElementById('pct-baja').textContent = pct('BAJA').toFixed(1) + ' %';
+  document.getElementById('barra-niveles').innerHTML =
+    `<div style="width:${pct('ALTA')}%;background:var(--alta)"></div>` +
+    `<div style="width:${pct('MEDIA')}%;background:var(--media)"></div>` +
+    `<div style="width:${pct('BAJA')}%;background:var(--baja)"></div>`;
+
+  const w = meta.clima;
+  const est = meta.estaciones || {};
+  const lluviaObs = (est.lluvia_observada_mm != null)
+    ? `<br>📡 Lluvia <u>observada</u> estaciones: <b>${est.lluvia_observada_mm} mm</b>` +
+      `<span style="color:#5b6875"> (desde ${est.ventana || ''})</span>`
+    : '';
+  const tarde = (w.viento_tarde != null)
+    ? `<br>🌬️ <b>Tarde (12-18 h):</b> viento hasta <b>${w.viento_tarde} km/h</b>` +
+      ` · humedad mín <b>${w.humedad_tarde} %</b>`
+    : '';
+  document.getElementById('clima').innerHTML =
+    `<b>Condiciones del día (promedio distrito)</b><br>` +
+    `🌡️ Temp. máx: <b>${w.tmax} °C</b> · 💧 Humedad mín: <b>${w.humedad_min ?? '–'} %</b><br>` +
+    `💨 Viento máx: <b>${w.viento_max} km/h</b>` + tarde +
+    `<br>🌧️ Lluvia hoy (pronóstico): <b>${w.precip_hoy} mm</b> · 30 días: <b>${w.precip_30d} mm</b>` +
+    lluviaObs +
+    `<br>☀️ Radiación: <b>${w.radiacion} MJ/m²</b> · Días sin lluvia: <b>${w.dias_sin_lluvia}</b>` +
+    (est.correccion_activa ? `<br>✅ Corrección con estaciones en tierra activa` : '') +
+    (meta.hotspots_48h ? `<br>🔥 <b>${meta.hotspots_48h}</b> puntos calientes en 48 h` : '');
+
+  document.getElementById('modelo-nota').textContent =
+    `Modelo Random Forest entrenado con ${meta.modelo.n_incendios} incendios ` +
+    `(${meta.modelo.periodo}). AUC validación: ${meta.modelo.auc_cv} · ` +
+    `AUC 2021-2023: ${meta.modelo.auc_holdout}.`;
+
+  const overlay = L.imageOverlay('data/alerta_overlay.png?v=' + meta.generado,
+    meta.bounds, { opacity: 0.55, interactive: false }).addTo(map);
+  map.fitBounds(meta.bounds, { paddingTopLeft: [270, 60] });
+
+  const colores = { ALTA: '#c62828', MEDIA: '#f9a825', BAJA: '#2e7d32' };
+  fetch('data/corregimientos.geojson').then(r => r.json()).then(gj => {
+    const capa = L.geoJSON(gj, {
+      style: f => ({ color: '#33414e', weight: 1.2, fillOpacity: 0, dashArray: '3 3' }),
+      onEachFeature: (f, ly) => {
+        const p = f.properties;
+        ly.bindPopup(
+          `<h3>${p.nombre}</h3>` +
+          `Nivel dominante: <b style="color:${colores[p.nivel_dominante]}">${p.nivel_dominante}</b><br>` +
+          `Alta: ${p.pct_alta}% · Media: ${p.pct_media}% · Baja: ${p.pct_baja}%` +
+          `<div class="mini-barra">` +
+          `<div style="width:${p.pct_alta}%;background:${colores.ALTA}"></div>` +
+          `<div style="width:${p.pct_media}%;background:${colores.MEDIA}"></div>` +
+          `<div style="width:${p.pct_baja}%;background:${colores.BAJA}"></div></div>`);
+        ly.on('mouseover', () => ly.setStyle({ weight: 2.5, fillOpacity: .08 }));
+        ly.on('mouseout', () => ly.setStyle({ weight: 1.2, fillOpacity: 0 }));
+      }
+    }).addTo(map);
+
+    const cargas = [
+      fetch('data/hotspots.geojson').then(r => r.json()).catch(() => null),
+      fetch('data/estaciones.geojson').then(r => r.json()).catch(() => null),
+      fetch('data/bomberos.geojson').then(r => r.json()).catch(() => null)
+    ];
+    Promise.all(cargas).then(([hs, estGj, bomGj]) => {
+      const capas = { 'Nivel de alerta': overlay, 'Corregimientos': capa };
+
+      if (hs) {
+        capas['Puntos calientes 48h'] = L.geoJSON(hs, {
+          pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+            radius: 7, color: '#4a0072', fillColor: '#7b1fa2', fillOpacity: .9, weight: 2
+          }).bindPopup(`<b>Punto caliente VIIRS</b><br>${f.properties.fecha} ${f.properties.hora}` +
+                       `<br>FRP: ${f.properties.frp} MW`)
+        }).addTo(map);
+      }
+
+      if (estGj) {
+        capas['Estaciones meteorológicas'] = L.geoJSON(estGj, {
+          pointToLayer: (f, latlng) => {
+            const p = f.properties;
+            const filas = [];
+            if (p.precip_mm != null) filas.push(`🌧️ Lluvia: <b>${p.precip_mm} mm</b>` +
+              (p.modelo_precip_hoy != null ? ` <span style="color:#5b6875">(modelo hoy: ${p.modelo_precip_hoy})</span>` : ''));
+            if (p.tmax_C != null) filas.push(`🌡️ Temp. máx: <b>${p.tmax_C} °C</b>` +
+              (p.modelo_tmax != null ? ` <span style="color:#5b6875">(modelo: ${p.modelo_tmax})</span>` : ''));
+            if (p.tmin_C != null) filas.push(`🌡️ Temp. mín: <b>${p.tmin_C} °C</b>`);
+            if (p.viento_max_kmh != null) filas.push(`💨 Viento máx: <b>${p.viento_max_kmh} km/h</b>`);
+            if (p.humedad_min != null) filas.push(`💧 Humedad mín: <b>${p.humedad_min} %</b>`);
+            return L.circleMarker(latlng, {
+              radius: 8, color: '#01579b', fillColor: '#0277bd', fillOpacity: .95, weight: 2
+            }).bindPopup(`<h3>📡 ${p.nombre}</h3>Red IDEAM · ventana ${p.ventana_desde} → ${p.ultima_obs}<br>` +
+                         filas.join('<br>'));
+          }
+        }).addTo(map);
+      }
+
+      if (bomGj) {
+        const icono = L.divIcon({ html: '🚒', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
+        capas['Estaciones de bomberos'] = L.geoJSON(bomGj, {
+          pointToLayer: (f, latlng) => L.marker(latlng, { icon: icono })
+            .bindPopup(`<h3>🚒 ${f.properties.nombre}</h3>` +
+                       (f.properties.operador ? `${f.properties.operador}<br>` : '') +
+                       (f.properties.direccion || ''))
+        }).addTo(map);
+      }
+
+      L.control.layers({ 'Mapa base': osm, 'Satélite': sat }, capas,
+        { position: 'bottomright', collapsed: true }).addTo(map);
+    });
+  });
+}).catch(err => {
+  document.getElementById('fecha-chip').textContent = 'Error cargando datos';
+  console.error(err);
+});
+</script>
+</body>
+</html>

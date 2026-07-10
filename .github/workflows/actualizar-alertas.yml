@@ -1,0 +1,42 @@
+# Actualiza las alertas todos los días y publica el geoportal en GitHub Pages.
+# Requisitos en el repositorio:
+#   - Settings -> Pages -> Source: "GitHub Actions"
+#   - (Opcional) Secret FIRMS_MAP_KEY para mostrar puntos calientes NASA FIRMS
+name: Actualizar alertas SAT
+
+on:
+  schedule:
+    - cron: "0 11 * * *"   # 06:00 hora de Colombia (UTC-5)
+    - cron: "0 17 * * *"   # 12:00 hora de Colombia: en Cali el viento aumenta
+                           # después del mediodía y con él el riesgo de incendio
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy pyproj joblib scikit-learn pyarrow Pillow
+      - name: Generar alertas del día
+        env:
+          FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
+        run: python scripts/05_predict_daily.py
+      - name: Guardar histórico de estaciones en el repositorio
+        run: |
+          git config user.name "sat-bot"
+          git config user.email "actions@github.com"
+          git add data/stations_history.csv data/model_at_stations.csv || true
+          git diff --cached --quiet || git commit -m "Histórico de estaciones $(date -u +%F_%H%M)"
+          git push || true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - uses: actions/deploy-pages@v4
