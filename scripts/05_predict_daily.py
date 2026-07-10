@@ -52,7 +52,7 @@ SIGMA_M = 8000.0   # alcance espacial (gaussiano) de la corrección de estacione
 W0 = 0.15          # encogimiento hacia "sin corrección" lejos de las estaciones
 
 
-def http_json(url, intentos=6):
+def http_json(url, intentos=8):
     ultimo = None
     for i in range(intentos):
         try:
@@ -60,7 +60,8 @@ def http_json(url, intentos=6):
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
             ultimo = e
-            if e.code == 429:
+            if e.code == 429 or e.code >= 500:
+                # rate limit o error transitorio del servidor
                 time.sleep(20 * (i + 1))
             else:
                 raise
@@ -117,7 +118,7 @@ def weather_cells():
                 "viento_tarde": float(tarde["wind_speed_10m"].max()),
                 "humedad_tarde": float(tarde["relative_humidity_2m"].min()),
             }
-            time.sleep(1)
+            time.sleep(3)
     return cells, str(hoy.date())
 
 
