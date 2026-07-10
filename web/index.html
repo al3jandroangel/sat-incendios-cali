@@ -51,9 +51,29 @@
   .leaflet-popup-content h3 { margin: 0 0 6px; font-size: 14px; }
   .mini-barra { height: 8px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 6px; width: 180px; }
 
+  #panel-resumen h2 { cursor: pointer; user-select: none; }
+  #panel-resumen h2 .chev { float: right; transition: transform .2s; }
+  #panel-resumen.colapsado #clima,
+  #panel-resumen.colapsado #modelo-nota { display: none; }
+  #panel-resumen.colapsado h2 .chev { transform: rotate(180deg); }
+
   @media (max-width: 640px) {
-    #panel-resumen { width: calc(100% - 24px); top: 86px; }
-    header h1 { font-size: 14px; } header .sub { display: none; }
+    header { padding: 8px 10px; gap: 8px; }
+    header .logo { font-size: 20px; }
+    header h1 { font-size: 13px; line-height: 1.25; }
+    header .sub { display: none; }
+    #fecha-chip { font-size: 10.5px; padding: 4px 8px; }
+
+    /* panel como hoja inferior plegable */
+    #panel-resumen {
+      top: auto; left: 8px; right: 8px; bottom: 8px; width: auto;
+      max-height: 55vh; overflow-y: auto;
+      border-radius: 14px; box-shadow: 0 -4px 18px rgba(0,0,0,.28);
+    }
+    #leyenda { display: none; }
+    .leaflet-control-zoom { display: none; }  /* en móvil se usa pellizco */
+    .leaflet-popup-content { font-size: 12px; max-width: 230px; }
+    .mini-barra { width: 140px; }
   }
 </style>
 </head>
@@ -70,7 +90,7 @@
 </header>
 
 <div id="panel-resumen" class="panel">
-  <h2>Estado de alerta hoy</h2>
+  <h2 id="panel-titulo">Estado de alerta hoy <span class="chev">▾</span></h2>
   <div class="barra" id="barra-niveles"></div>
   <div class="nivel-row"><span class="dot" style="background:var(--alta)"></span> Alerta ALTA <span class="pct" id="pct-alta">–</span></div>
   <div class="nivel-row"><span class="dot" style="background:var(--media)"></span> Alerta MEDIA <span class="pct" id="pct-media">–</span></div>
@@ -100,8 +120,19 @@ const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Wo
   { maxZoom: 19, attribution: '© Esri' });
 
 const fmt = n => n.toLocaleString('es-CO');
+const esMovil = window.matchMedia('(max-width: 640px)').matches;
 
-fetch('data/alerta_meta.json').then(r => r.json()).then(meta => {
+// panel plegable (en celular arranca plegado para dejar ver el mapa)
+const panel = document.getElementById('panel-resumen');
+document.getElementById('panel-titulo').addEventListener('click',
+  () => panel.classList.toggle('colapsado'));
+if (esMovil) {
+  panel.classList.add('colapsado');
+  document.querySelector('header h1').textContent = 'SAT Incendios — Cali';
+}
+
+fetch('data/alerta_meta.json?nc=' + Date.now(), { cache: 'no-store' })
+  .then(r => r.json()).then(meta => {
   document.getElementById('fecha-chip').textContent =
     `Actualizado: ${meta.generado} (hora Colombia)`;
 
@@ -140,12 +171,18 @@ fetch('data/alerta_meta.json').then(r => r.json()).then(meta => {
     `(${meta.modelo.periodo}). AUC validación: ${meta.modelo.auc_cv} · ` +
     `AUC 2021-2023: ${meta.modelo.auc_holdout}.`;
 
-  const overlay = L.imageOverlay('data/alerta_overlay.png?v=' + meta.generado,
+  const v = encodeURIComponent(meta.generado);
+  const overlay = L.imageOverlay('data/alerta_overlay.png?v=' + v,
     meta.bounds, { opacity: 0.55, interactive: false }).addTo(map);
-  map.fitBounds(meta.bounds, { paddingTopLeft: [270, 60] });
+  if (esMovil) {
+    map.fitBounds(meta.bounds, { paddingTopLeft: [15, 60],
+                                 paddingBottomRight: [15, 90] });
+  } else {
+    map.fitBounds(meta.bounds, { paddingTopLeft: [270, 60] });
+  }
 
   const colores = { ALTA: '#c62828', MEDIA: '#f9a825', BAJA: '#2e7d32' };
-  fetch('data/corregimientos.geojson').then(r => r.json()).then(gj => {
+  fetch('data/corregimientos.geojson?v=' + v).then(r => r.json()).then(gj => {
     const capa = L.geoJSON(gj, {
       style: f => ({ color: '#33414e', weight: 1.2, fillOpacity: 0, dashArray: '3 3' }),
       onEachFeature: (f, ly) => {
@@ -164,9 +201,9 @@ fetch('data/alerta_meta.json').then(r => r.json()).then(meta => {
     }).addTo(map);
 
     const cargas = [
-      fetch('data/hotspots.geojson').then(r => r.json()).catch(() => null),
-      fetch('data/estaciones.geojson').then(r => r.json()).catch(() => null),
-      fetch('data/bomberos.geojson').then(r => r.json()).catch(() => null)
+      fetch('data/hotspots.geojson?v=' + v).then(r => r.json()).catch(() => null),
+      fetch('data/estaciones.geojson?v=' + v).then(r => r.json()).catch(() => null),
+      fetch('data/bomberos.geojson?v=' + v).then(r => r.json()).catch(() => null)
     ];
     Promise.all(cargas).then(([hs, estGj, bomGj]) => {
       const capas = { 'Nivel de alerta': overlay, 'Corregimientos': capa };
