@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pandas numpy pyproj joblib scikit-learn pyarrow Pillow
+      - run: pip install pandas numpy pyproj joblib "scikit-learn==1.6.1" pyarrow Pillow
       - name: Generar alertas del día
         env:
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}

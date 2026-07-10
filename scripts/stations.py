@@ -16,6 +16,7 @@ que 05_predict_daily.py aplica con ponderación espacial gaussiana.
 import json
 import os
 import sys
+import time
 import urllib.parse
 import urllib.request
 
@@ -38,11 +39,18 @@ SENSORES = {"0240": "precip", "0068": "temp", "0069": "tmax",
             "0070": "tmin", "0103": "viento", "0027": "humedad"}
 
 
-def _q(params):
+def _q(params, intentos=4):
     url = ("https://www.datos.gov.co/resource/57sv-p2fu.json?"
            + urllib.parse.urlencode(params))
-    with urllib.request.urlopen(url, timeout=90) as r:
-        return json.loads(r.read())
+    ultimo = None
+    for i in range(intentos):
+        try:
+            with urllib.request.urlopen(url, timeout=90) as r:
+                return json.loads(r.read())
+        except Exception as e:
+            ultimo = e
+            time.sleep(8 * (i + 1))
+    raise RuntimeError(f"datos.gov.co: fallo persistente: {ultimo}")
 
 
 def fetch_raw():

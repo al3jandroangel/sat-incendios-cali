@@ -53,16 +53,23 @@ W0 = 0.15          # encogimiento hacia "sin corrección" lejos de las estacione
 
 
 def http_json(url, intentos=6):
+    ultimo = None
     for i in range(intentos):
         try:
             with urllib.request.urlopen(url, timeout=90) as r:
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
+            ultimo = e
             if e.code == 429:
                 time.sleep(20 * (i + 1))
             else:
                 raise
-    raise RuntimeError("Open-Meteo: rate limit persistente")
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            # errores transitorios de red (SSL handshake, DNS, etc.)
+            ultimo = e
+            time.sleep(10 * (i + 1))
+    raise RuntimeError(f"Open-Meteo: fallo persistente tras {intentos} "
+                       f"intentos: {ultimo}")
 
 
 def weather_cells():
