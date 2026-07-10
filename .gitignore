@@ -8,3 +8,4 @@ data/weather_cache/
 __pycache__/
 *.pyc
 actualizacion.log
+plan_b.log
