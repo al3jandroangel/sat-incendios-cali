@@ -1,0 +1,73 @@
+{
+ "modelo": {
+  "features": [
+   "elevacion",
+   "pendiente",
+   "ctc",
+   "cdc",
+   "ccc",
+   "SUSC",
+   "dist_vias",
+   "dist_vias_prin",
+   "tmax",
+   "tmean",
+   "precip",
+   "precip_3d",
+   "precip_7d",
+   "precip_30d",
+   "dias_sin_lluvia",
+   "viento_max",
+   "radiacion",
+   "et0",
+   "humedad_min",
+   "humedad_media"
+  ],
+  "umbral_media": 0.1868790307101927,
+  "umbral_alta": 0.42109142372664893,
+  "auc_cv_5fold": 0.8823,
+  "auc_holdout_2021_2023": 0.886,
+  "n_entrenamiento": 529,
+  "n_incendios": 105,
+  "periodo": "2010-2023",
+  "importancias": {
+   "precip_30d": 0.0984,
+   "et0": 0.091,
+   "tmax": 0.0809,
+   "dist_vias": 0.0685,
+   "humedad_media": 0.0662,
+   "radiacion": 0.0633,
+   "humedad_min": 0.0623,
+   "elevacion": 0.0597,
+   "precip_7d": 0.0595,
+   "tmean": 0.0519,
+   "dist_vias_prin": 0.0511,
+   "dias_sin_lluvia": 0.0501,
+   "viento_max": 0.0423,
+   "pendiente": 0.0392,
+   "precip_3d": 0.0383,
+   "precip": 0.0309,
+   "ctc": 0.0174,
+   "ccc": 0.0112,
+   "SUSC": 0.0091,
+   "cdc": 0.0088
+  }
+ },
+ "validacion_era5": {
+  "temperatura_diaria_skcl": {
+   "n": 1684,
+   "correlacion": 0.614,
+   "sesgo_modelo_menos_obs": -2.52,
+   "rmse": 2.69
+  },
+  "precip_anual_cali_ideam": {
+   "n": 42,
+   "correlacion": 0.399,
+   "sesgo_modelo_menos_obs": 2077.99,
+   "rmse": 2122.59
+  },
+  "diario_reciente_estaciones": {
+   "nota": "aún sin días completos acumulados; este contraste crece automáticamente con cada ejecución diaria"
+  },
+  "generado": "2026-07-09 16:33"
+ }
+}

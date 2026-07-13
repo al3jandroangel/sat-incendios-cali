@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cómo funciona? — SAT Incendios Forestales de Cali</title>
+<style>
+  :root {
+    --alta: #c62828; --media: #f9a825; --baja: #2e7d32;
+    --tinta: #1c2430; --tinta2: #4a5560; --muted: #7a8590;
+    --borde: #dde3ea; --fondo: #f5f7f9; --panel: #ffffff; --verde: #14532d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif;
+         color: var(--tinta); background: var(--fondo); line-height: 1.55; }
+  header { background: linear-gradient(90deg, #0d3b2e, #14532d); color: #fff;
+           padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  header a { color: #cde7d3; font-size: 13px; margin-left: auto;
+             text-decoration: none; white-space: nowrap; }
+  header a:hover { text-decoration: underline; }
+  main { max-width: 980px; margin: 0 auto; padding: 22px 16px 60px; }
+  h2 { font-size: 20px; margin: 38px 0 6px; color: var(--verde); }
+  h3 { font-size: 15px; margin: 20px 0 6px; }
+  p { margin: 8px 0; color: var(--tinta2); }
+  b { color: var(--tinta); }
+  .lead { font-size: 16px; }
+
+  /* diagrama de flujo */
+  .flujo { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch;
+           margin: 18px 0; }
+  .flujo .caja { flex: 1 1 150px; background: var(--panel);
+                 border: 1px solid var(--borde); border-radius: 10px;
+                 padding: 10px 12px; font-size: 12.5px; position: relative; }
+  .flujo .caja .t { font-weight: 600; font-size: 12px; text-transform: uppercase;
+                    letter-spacing: .4px; margin-bottom: 4px; }
+  .flujo .caja.destino { background: #fff6e6; border-color: #e8c37a; }
+  .flecha { align-self: center; color: var(--muted); font-size: 18px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+           gap: 12px; margin: 14px 0; }
+  .card { background: var(--panel); border: 1px solid var(--borde);
+          border-radius: 10px; padding: 12px 14px; font-size: 13px; }
+  .card .icono { font-size: 20px; }
+  .card .t { font-weight: 600; margin: 4px 0; }
+  .card .fuente { color: var(--muted); font-size: 11.5px; margin-top: 6px; }
+  .card.dinamica { border-left: 4px solid #0277bd; }
+  .card.estatica { border-left: 4px solid #6d4c41; }
+
+  .mapas { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+           gap: 14px; margin: 16px 0; }
+  .mapas figure { margin: 0; background: var(--panel); border: 1px solid var(--borde);
+                  border-radius: 10px; padding: 8px; }
+  .mapas img { width: 100%; height: auto; border-radius: 6px; display: block; }
+  .mapas figcaption { font-size: 12px; color: var(--muted); padding: 6px 4px 2px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+           gap: 12px; margin: 14px 0; }
+  .tile { background: var(--panel); border: 1px solid var(--borde);
+          border-radius: 10px; padding: 14px; text-align: center; }
+  .tile .num { font-size: 26px; font-weight: 700; color: var(--verde); }
+  .tile .lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  table { border-collapse: collapse; width: 100%; background: var(--panel);
+          border: 1px solid var(--borde); border-radius: 10px; overflow: hidden;
+          font-size: 13px; margin: 12px 0; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--borde); }
+  th { background: #eef3ee; font-weight: 600; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* barras de importancia (HTML puro) */
+  #importancias .fila { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
+  #importancias .nombre { width: 170px; font-size: 12.5px; text-align: right;
+                          color: var(--tinta2); flex: none; }
+  #importancias .pista { flex: 1; background: #eceff2; border-radius: 4px; height: 12px; }
+  #importancias .barra { height: 12px; border-radius: 4px; background: #14532d; }
+  #importancias .valor { width: 46px; font-size: 12px; color: var(--muted);
+                         font-variant-numeric: tabular-nums; }
+
+  .nota { background: #fff8e8; border: 1px solid #e8d9a8; border-radius: 10px;
+          padding: 10px 14px; font-size: 13px; margin: 14px 0; }
+  .niveles { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+  .nivel { flex: 1 1 180px; border-radius: 10px; padding: 10px 14px; color: #fff;
+           font-size: 13px; }
+  a { color: #0b5cad; }
+  footer { text-align: center; color: var(--muted); font-size: 12px;
+           padding: 24px 10px; }
+  @media (max-width: 640px) {
+    #importancias .nombre { width: 110px; font-size: 11px; }
+    h2 { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div style="font-size:24px">🔥</div>
+  <h1>¿Cómo funciona el Sistema de Alertas Tempranas?</h1>
+  <a href="index.html">← Volver al mapa</a>
+</header>
+<main>
+
+<p class="lead">El <b>SAT de Incendios Forestales de Santiago de Cali</b> estima, cada 6 horas
+y para todo el distrito, la probabilidad de que se presente un incendio forestal. Combina un
+modelo de <b>machine learning entrenado con los incendios reales de 2010–2023</b> con datos
+de clima actualizados en tiempo casi real, y publica el resultado como un mapa de tres
+niveles de alerta.</p>
+
+<div class="niveles">
+  <div class="nivel" style="background:var(--alta)"><b>ALERTA ALTA</b><br>Condiciones en las que ocurrieron 2 de cada 3 incendios históricos.</div>
+  <div class="nivel" style="background:var(--media)"><b>ALERTA MEDIA</b><br>Franja de precaución: cubre el 90% de los incendios históricos junto con la alta.</div>
+  <div class="nivel" style="background:var(--baja)"><b>ALERTA BAJA</b><br>Condiciones en las que históricamente casi no se presentaron incendios.</div>
+</div>
+
+<h2>1. El flujo del sistema</h2>
+<div class="flujo">
+  <div class="caja"><div class="t">🌦️ Clima del día</div>Lluvia, temperatura, humedad, viento, radiación (Open-Meteo/ERA5, 9 celdas) + estaciones IDEAM en tierra.</div>
+  <div class="flecha">→</div>
+  <div class="caja"><div class="t">🗺️ Territorio</div>Pendiente y elevación (DTM 2.5 m), combustibles vegetales, distancia a vías — precalculados en una grilla de 100 m (56.262 celdas).</div>
+  <div class="flecha">→</div>
+  <div class="caja"><div class="t">🤖 Modelo Random Forest</div>Calcula la probabilidad de incendio en cada celda con las condiciones de hoy.</div>
+  <div class="flecha">→</div>
+  <div class="caja destino"><div class="t">🚨 Mapa de alerta</div>Alta / media / baja por celda, resumen por corregimiento y puntos calientes satelitales activos.</div>
+</div>
+<p>El proceso corre automáticamente hacia las 00:00, 6:00, 12:00 y 18:00 (hora de Colombia).
+La actualización del mediodía es clave: <b>en Cali el viento aumenta después del mediodía</b>,
+elevando el riesgo de propagación en las tardes.</p>
+
+<h2>2. Las variables del modelo</h2>
+<p>Siguen los componentes de la amenaza del protocolo IDEAM para zonificación de riesgo por
+incendios de la cobertura vegetal:</p>
+<div class="cards">
+  <div class="card dinamica"><span class="icono">🌡️</span><div class="t">Clima (dinámicas)</div>
+    Temperatura máxima y media (desescaladas por elevación), lluvia del día y acumulada a 3/7/30 días,
+    <b>días sin lluvia</b>, humedad relativa mínima y media, viento máximo, radiación solar y
+    evapotranspiración (ET0).
+    <div class="fuente">Fuente: <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> (reanálisis ERA5 y pronóstico) + <a href="https://www.datos.gov.co/Ambiente-y-Desarrollo-Sostenible/Datos-Hidrometeorol-gicos-Crudos-Red-de-Estaciones/57sv-p2fu" target="_blank">estaciones IDEAM</a></div></div>
+  <div class="card estatica"><span class="icono">⛰️</span><div class="t">Relieve (estáticas)</div>
+    Elevación y pendiente del terreno derivadas del modelo digital de terreno de radar de 2.5 m.
+    <div class="fuente">Fuente: DTM Radar 2.5 m — Alcaldía de Cali</div></div>
+  <div class="card estatica"><span class="icono">🌿</span><div class="t">Vegetación (estáticas)</div>
+    Tipo de combustible, duración, carga total y susceptibilidad de la cobertura vegetal
+    (calificaciones del estudio de zonificación, protocolo IDEAM).
+    <div class="fuente">Fuente: Urrutia G. (2018), CVC/DAGMA</div></div>
+  <div class="card estatica"><span class="icono">🛣️</span><div class="t">Accesibilidad (estáticas)</div>
+    Distancia de cada celda a la vía más cercana y a las vías principales (la mayoría de
+    igniciones son antrópicas y ocurren cerca de caminos).
+    <div class="fuente">Fuente: Jerarquización vial — <a href="https://www.cali.gov.co/planeacion/publicaciones/3560/idesc/" target="_blank">IDESC</a></div></div>
+  <div class="card"><span class="icono">🔥</span><div class="t">Factor histórico</div>
+    106 puntos calientes confirmados 2010–2023 dentro del distrito: son las <b>etiquetas</b> con
+    las que aprende el modelo y la vara con la que se mide su calidad.
+    <div class="fuente">Fuente: <a href="https://firms.modaps.eosdis.nasa.gov/map/" target="_blank">NASA FIRMS</a> (MODIS y VIIRS)</div></div>
+</div>
+
+<div class="mapas">
+  <figure><img src="img/mapa_incendios.png" alt="Mapa de incendios históricos 2010-2023"><figcaption>Los 106 incendios históricos se concentran en el piedemonte, los cerros tutelares y el oriente seco (El Hormiguero, Navarro).</figcaption></figure>
+  <figure><img src="img/mapa_susceptibilidad.png" alt="Mapa de susceptibilidad de la vegetación"><figcaption>Susceptibilidad de la vegetación: producto de tipo, duración y carga de combustibles (más oscuro = más susceptible).</figcaption></figure>
+  <figure><img src="img/mapa_pendiente.png" alt="Mapa de pendiente"><figcaption>Pendiente del terreno: las laderas empinadas aceleran la propagación del fuego.</figcaption></figure>
+  <figure><img src="img/mapa_elevacion.png" alt="Mapa de elevación"><figcaption>Elevación (960–4.100 m): con ella se desescala la temperatura de ERA5 (−6.5 °C por km) para que el clima siga la topografía.</figcaption></figure>
+  <figure><img src="img/mapa_vias.png" alt="Mapa de distancia a vías"><figcaption>Distancia a vías: la cercanía a caminos aumenta la probabilidad de ignición antrópica.</figcaption></figure>
+</div>
+
+<h2>3. ¿Cómo se entrenó el Random Forest?</h2>
+<p>Un <b>Random Forest</b> es un conjunto de cientos de árboles de decisión: cada árbol aprende
+reglas del tipo <i>«si llevan más de 8 días sin llover ≥10 mm, la temperatura supera 26 °C y la
+celda está a menos de 500 m de una vía con vegetación susceptible → probable incendio»</i>, y la
+predicción final es el voto de todos los árboles (600 en este caso).</p>
+<h3>El conjunto de entrenamiento</h3>
+<p><b>Presencias:</b> los 106 incendios históricos, cada uno con las condiciones del territorio
+en su ubicación y <b>el clima real del día en que ocurrió</b> (reconstruido con ERA5).<br>
+<b>Pseudo-ausencias:</b> 424 combinaciones aleatorias de lugar y fecha (2010–2023) alejadas de
+cualquier incendio registrado (a más de 2 km o 7 días), que representan condiciones «normales».</p>
+<h3>Entrenamiento y prueba</h3>
+<p>El modelo se evaluó de dos formas independientes: <b>validación cruzada de 5 particiones</b>
+(se entrena con el 80% de los datos y se predice el 20% restante, rotando 5 veces) y una prueba
+más exigente: <b>holdout temporal</b> — se entrenó solo con 2010–2020 y se le pidió predecir los
+incendios de 2021–2023, que nunca vio. Los umbrales de alerta se fijaron sobre predicciones
+fuera-de-muestra: MEDIA retiene el 90% de los incendios, ALTA el 66% en la menor área posible.
+Finalmente las probabilidades se calibraron (isotónica) para que «probabilidad 0.4» signifique
+realmente ~40%.</p>
+
+<h2>4. Calidad del modelo</h2>
+<div class="tiles" id="tiles"></div>
+<p><b>AUC</b> (área bajo la curva ROC) mide la capacidad de distinguir días-lugares con incendio
+de días-lugares sin incendio: 0.5 = azar, 1.0 = perfecto. Valores de 0.85–0.90 son un desempeño
+alto para predicción de incendios con muestras pequeñas.</p>
+<h3>¿Dónde cayeron los incendios reales? (predicciones fuera de muestra)</h3>
+<table>
+  <tr><th>Nivel de alerta emitido</th><th class="num">Incendios reales</th><th class="num">No-incendios (424)</th></tr>
+  <tr><td>🔴 ALTA</td><td class="num">70 (67%)</td><td class="num">47</td></tr>
+  <tr><td>🟠 MEDIA</td><td class="num">25 (24%)</td><td class="num">113</td></tr>
+  <tr><td>🟢 BAJA</td><td class="num">10 (9%)</td><td class="num">264</td></tr>
+</table>
+<h3>¿Qué variables pesan más?</h3>
+<div id="importancias"></div>
+<h3>Validación del clima contra estaciones en tierra</h3>
+<p>ERA5 se contrastó con observaciones reales: temperatura diaria del aeropuerto (GHCN/NOAA,
+1.684 días) y la serie anual de lluvia de la estación Cali-IDEAM (42 años). Conclusión:
+correlación moderada y <b>fuerte sesgo húmedo de ERA5 en Cali (~3× la lluvia real)</b>. Por eso
+el umbral de «día con lluvia» del contador se calibró a la frecuencia real (~131 días de lluvia
+al año) y el portal muestra las observaciones de las estaciones IDEAM junto al pronóstico.</p>
+<div class="nota">⚠️ <b>Limitaciones.</b> La muestra de entrenamiento es pequeña (106 incendios);
+el clima tiene resolución nativa de ~10 km (desescalado con elevación e interpolación); las 3
+estaciones en tierra están en la zona urbana; y las alertas indican <b>condiciones propicias</b>,
+no predicen igniciones individuales. Este sistema es informativo y no reemplaza los canales
+oficiales de emergencia (línea 123).</div>
+
+<h2>5. Fuentes de datos en tiempo real</h2>
+<table>
+  <tr><th>Dato</th><th>Fuente</th><th>Consulta</th></tr>
+  <tr><td>Clima (pronóstico y reanálisis ERA5)</td><td>Open-Meteo</td><td><a href="https://open-meteo.com/en/docs" target="_blank">open-meteo.com</a></td></tr>
+  <tr><td>Estaciones meteorológicas de Cali</td><td>IDEAM — Datos Abiertos Colombia</td><td><a href="https://www.datos.gov.co/Ambiente-y-Desarrollo-Sostenible/Datos-Hidrometeorol-gicos-Crudos-Red-de-Estaciones/57sv-p2fu" target="_blank">datos.gov.co</a></td></tr>
+  <tr><td>Puntos calientes satelitales (48 h)</td><td>NASA FIRMS (VIIRS)</td><td><a href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;l:fires_viirs_snpp;@-76.6,3.4,10z" target="_blank">firms.modaps.eosdis.nasa.gov</a></td></tr>
+  <tr><td>Estaciones de bomberos</td><td>OpenStreetMap + registro local</td><td><a href="https://www.openstreetmap.org/#map=12/3.42/-76.55" target="_blank">openstreetmap.org</a></td></tr>
+  <tr><td>Código y datos del sistema</td><td>GitHub (abierto)</td><td><a href="https://github.com/al3jandroangel/sat-incendios-cali" target="_blank">github.com/al3jandroangel/sat-incendios-cali</a></td></tr>
+</table>
+
+</main>
+<footer>SAT Incendios Forestales — Distrito Especial de Santiago de Cali · proyecto de código abierto</footer>
+
+<script>
+fetch('data/modelo_meta.json?nc=' + Date.now(), { cache: 'no-store' })
+  .then(r => r.json()).then(d => {
+    const m = d.modelo;
+    document.getElementById('tiles').innerHTML =
+      `<div class="tile"><div class="num">${m.auc_cv_5fold.toFixed(2)}</div><div class="lbl">AUC validación cruzada (5 particiones)</div></div>` +
+      `<div class="tile"><div class="num">${m.auc_holdout_2021_2023.toFixed(2)}</div><div class="lbl">AUC prueba temporal 2021–2023</div></div>` +
+      `<div class="tile"><div class="num">${m.n_incendios}</div><div class="lbl">incendios de entrenamiento (${m.periodo})</div></div>` +
+      `<div class="tile"><div class="num">${m.n_entrenamiento}</div><div class="lbl">muestras totales (con pseudo-ausencias)</div></div>`;
+
+    const nombres = {
+      tmax: 'Temperatura máxima', tmean: 'Temperatura media',
+      precip: 'Lluvia del día', precip_3d: 'Lluvia 3 días', precip_7d: 'Lluvia 7 días',
+      precip_30d: 'Lluvia 30 días', dias_sin_lluvia: 'Días sin lluvia',
+      viento_max: 'Viento máximo', radiacion: 'Radiación solar', et0: 'Evapotranspiración',
+      humedad_min: 'Humedad mínima', humedad_media: 'Humedad media',
+      elevacion: 'Elevación', pendiente: 'Pendiente', ctc: 'Tipo de combustible',
+      cdc: 'Duración combustible', ccc: 'Carga de combustible', SUSC: 'Susceptibilidad vegetal',
+      dist_vias: 'Distancia a vías', dist_vias_prin: 'Dist. vías principales'
+    };
+    const imp = Object.entries(m.importancias).sort((a, b) => b[1] - a[1]);
+    const maxV = imp[0][1];
+    document.getElementById('importancias').innerHTML = imp.map(([k, v]) =>
+      `<div class="fila"><div class="nombre">${nombres[k] || k}</div>` +
+      `<div class="pista"><div class="barra" style="width:${(100 * v / maxV).toFixed(0)}%"></div></div>` +
+      `<div class="valor">${(100 * v).toFixed(1)}%</div></div>`).join('');
+  });
+</script>
+</body>
+</html>

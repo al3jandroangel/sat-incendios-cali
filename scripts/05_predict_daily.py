@@ -51,6 +51,8 @@ FEATS_MET = ["tmax", "tmean", "precip", "precip_3d", "precip_7d", "precip_30d",
 SIGMA_M = 8000.0   # alcance espacial (gaussiano) de la corrección de estaciones
 W0 = 0.15          # encogimiento hacia "sin corrección" lejos de las estaciones
 LAPSE = -0.0065    # gradiente térmico vertical (°C/m) para desescalado orográfico
+WET_MM = 10.0      # umbral de "día con lluvia" en ERA5 calibrado a la frecuencia
+                   # real de Cali (~131 días/año IDEAM); ver 02_build_dataset.py
 
 
 def http_json(url, intentos=8):
@@ -90,7 +92,7 @@ def weather_cells():
             df = df.set_index("time").astype(float)
             p = df["precipitation_sum"].fillna(0.0)
             hoy = df.index[-1]
-            rain = (p >= 1.0)
+            rain = (p >= WET_MM)
             dias = 0
             for day in reversed(rain.index):
                 if rain[day]:

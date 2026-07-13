@@ -86,7 +86,8 @@
     <h1>Sistema de Alertas Tempranas — Incendios Forestales</h1>
     <div class="sub">Distrito Especial de Santiago de Cali · Modelo predictivo con clima en tiempo real</div>
   </div>
-  <div id="fecha-chip">cargando…</div>
+  <a id="link-como" href="metodologia.html" style="color:#cde7d3; font-size:12.5px; margin-left:auto; white-space:nowrap; text-decoration:none">ℹ️ ¿Cómo funciona?</a>
+  <div id="fecha-chip" style="margin-left:10px">cargando…</div>
 </header>
 
 <div id="panel-resumen" class="panel">
@@ -166,10 +167,14 @@ fetch('data/alerta_meta.json?nc=' + Date.now(), { cache: 'no-store' })
     (est.correccion_activa ? `<br>✅ Corrección con estaciones en tierra activa` : '') +
     (meta.hotspots_48h ? `<br>🔥 <b>${meta.hotspots_48h}</b> puntos calientes en 48 h` : '');
 
-  document.getElementById('modelo-nota').textContent =
+  document.getElementById('modelo-nota').innerHTML =
     `Modelo Random Forest entrenado con ${meta.modelo.n_incendios} incendios ` +
     `(${meta.modelo.periodo}). AUC validación: ${meta.modelo.auc_cv} · ` +
-    `AUC 2021-2023: ${meta.modelo.auc_holdout}.`;
+    `AUC 2021-2023: ${meta.modelo.auc_holdout}. ` +
+    `<a href="metodologia.html">¿Cómo funciona?</a><br>` +
+    `Fuentes: clima <a href="https://open-meteo.com/" target="_blank">Open-Meteo/ERA5</a> · ` +
+    `estaciones <a href="https://www.datos.gov.co/Ambiente-y-Desarrollo-Sostenible/Datos-Hidrometeorol-gicos-Crudos-Red-de-Estaciones/57sv-p2fu" target="_blank">IDEAM datos.gov.co</a> · ` +
+    `focos <a href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;l:fires_viirs_snpp;@-76.6,3.4,10z" target="_blank">NASA FIRMS</a>`;
 
   const v = encodeURIComponent(meta.generado);
   const overlay = L.imageOverlay('data/alerta_overlay.png?v=' + v,

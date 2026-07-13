@@ -1,6 +1,6 @@
 {
-  "fecha": "2026-07-10",
-  "generado": "2026-07-10 12:25",
+  "fecha": "2026-07-13",
+  "generado": "2026-07-13 13:43",
   "bounds": [
     [
       3.273435421731155,
@@ -13,31 +13,31 @@
   ],
   "celdas": {
     "total": 56262,
-    "ALTA": 5365,
-    "MEDIA": 17155,
-    "BAJA": 33742
+    "ALTA": 11396,
+    "MEDIA": 16961,
+    "BAJA": 27905
   },
   "clima": {
-    "tmax": 24.7,
-    "precip_hoy": 13.5,
-    "precip_30d": 274.1,
-    "dias_sin_lluvia": 0.0,
-    "viento_max": 7.1,
-    "radiacion": 19.0,
-    "humedad_min": 63.0,
-    "viento_tarde": 6.7,
-    "humedad_tarde": 64.0
+    "tmax": 23.6,
+    "precip_hoy": 10.4,
+    "precip_30d": 286.6,
+    "dias_sin_lluvia": 14.3,
+    "viento_max": 6.3,
+    "radiacion": 19.1,
+    "humedad_min": 66.0,
+    "viento_tarde": 6.2,
+    "humedad_tarde": 68.0
   },
   "estaciones": {
     "n": 3,
     "lluvia_observada_mm": 0.0,
-    "ventana": "2026-07-10 00:20",
+    "ventana": "2026-07-10 17:00",
     "correccion_activa": false
   },
   "hotspots_48h": 0,
   "modelo": {
-    "auc_cv": 0.8803,
-    "auc_holdout": 0.8899,
+    "auc_cv": 0.8823,
+    "auc_holdout": 0.886,
     "periodo": "2010-2023",
     "n_incendios": 105
   }

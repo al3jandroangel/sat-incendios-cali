@@ -77,6 +77,13 @@ def fetch_cell(lat, lon, start="2009-12-01", end="2023-12-31"):
 
 LAPSE = -0.0065  # gradiente térmico vertical (°C/m)
 
+# Umbral de "día con lluvia" para el contador de días sin lluvia, calibrado
+# contra la climatología observada: ERA5 sobreestima la lluvia en Cali (~3x,
+# ver 06_validate_era5.py) y con el umbral estándar de 1 mm marcaría 298 días
+# lluviosos/año; con 10 mm marca ~139/año, cercano a los ~131 días de lluvia
+# reales de Cali (IDEAM).
+WET_MM = 10.0
+
 
 def cell_elevation(lat, lon):
     """Elevación del modelo ERA5 en la celda (para desescalado orográfico)."""
@@ -92,8 +99,8 @@ def cell_dataframe(lat, lon):
     df["precip_3d"] = p.rolling(3, min_periods=1).sum()
     df["precip_7d"] = p.rolling(7, min_periods=1).sum()
     df["precip_30d"] = p.rolling(30, min_periods=1).sum()
-    # días desde la última lluvia >= 1 mm (incluye el propio día como 0)
-    rain = (p >= 1.0).to_numpy()
+    # días desde la última lluvia >= WET_MM (incluye el propio día como 0)
+    rain = (p >= WET_MM).to_numpy()
     days = np.zeros(len(rain))
     c = 60.0
     for i, r in enumerate(rain):
