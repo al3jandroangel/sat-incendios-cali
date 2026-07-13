@@ -84,6 +84,13 @@
   .nivel { flex: 1 1 180px; border-radius: 10px; padding: 10px 14px; color: #fff;
            font-size: 13px; }
   a { color: #0b5cad; }
+  #referencias ol { padding-left: 0; list-style: none; counter-reset: ref; }
+  #referencias li { font-size: 13px; color: var(--tinta2); margin: 10px 0;
+                    padding-left: 34px; position: relative; }
+  #referencias li::before { counter-increment: ref; content: "[" counter(ref) "]";
+                            position: absolute; left: 0; color: var(--muted);
+                            font-variant-numeric: tabular-nums; }
+  #referencias i { color: var(--tinta); }
   footer { text-align: center; color: var(--muted); font-size: 12px;
            padding: 24px 10px; }
   @media (max-width: 640px) {
@@ -141,7 +148,7 @@ incendios de la cobertura vegetal:</p>
   <div class="card estatica"><span class="icono">🌿</span><div class="t">Vegetación (estáticas)</div>
     Tipo de combustible, duración, carga total y susceptibilidad de la cobertura vegetal
     (calificaciones del estudio de zonificación, protocolo IDEAM).
-    <div class="fuente">Fuente: Urrutia G. (2018), CVC/DAGMA</div></div>
+    <div class="fuente">Fuente: <a href="#referencias">Urrutia Garcés (2018)</a>, protocolo IDEAM (2011)</div></div>
   <div class="card estatica"><span class="icono">🛣️</span><div class="t">Accesibilidad (estáticas)</div>
     Distancia de cada celda a la vía más cercana y a las vías principales (la mayoría de
     igniciones son antrópicas y ocurren cerca de caminos).
@@ -214,6 +221,75 @@ oficiales de emergencia (línea 123).</div>
   <tr><td>Estaciones de bomberos</td><td>OpenStreetMap + registro local</td><td><a href="https://www.openstreetmap.org/#map=12/3.42/-76.55" target="_blank">openstreetmap.org</a></td></tr>
   <tr><td>Código y datos del sistema</td><td>GitHub (abierto)</td><td><a href="https://github.com/al3jandroangel/sat-incendios-cali" target="_blank">github.com/al3jandroangel/sat-incendios-cali</a></td></tr>
 </table>
+
+<section id="referencias">
+<h2>6. Referencias</h2>
+<ol>
+  <li>Urrutia Garcés, C. A. (2018). <i>Zonificación de riesgos a incendios forestales
+  en zona rural del municipio de Santiago de Cali</i> [Trabajo de grado,
+  Especialización en Sistemas de Información Geográfica]. Universidad de Manizales,
+  Facultad de Ciencias e Ingeniería, Manizales. — Base metodológica de la
+  susceptibilidad de la cobertura vegetal (tipo, duración y carga de combustibles)
+  y de los rangos de calificación de la amenaza empleados en este sistema.</li>
+
+  <li>IDEAM (2011). <i>Protocolo para la realización de mapas de zonificación de
+  riesgos a incendios de la cobertura vegetal — Escala 1:100.000</i>. Instituto de
+  Hidrología, Meteorología y Estudios Ambientales, Bogotá D.C., Colombia. —
+  Marco oficial de los componentes de la amenaza (susceptibilidad, factores
+  climáticos, relieve, accesibilidad y factor histórico).</li>
+
+  <li>Hersbach, H., Bell, B., Berrisford, P., et al. (2020). The ERA5 global
+  reanalysis. <i>Quarterly Journal of the Royal Meteorological Society</i>,
+  146(730), 1999–2049. <a href="https://doi.org/10.1002/qj.3803" target="_blank">doi:10.1002/qj.3803</a>
+  — Reanálisis climático con el que se reconstruyó el clima diario 2010–2023 del
+  entrenamiento.</li>
+
+  <li>Zippenfenig, P. (2023). <i>Open-Meteo.com Weather API</i> [Software]. Zenodo.
+  <a href="https://doi.org/10.5281/zenodo.7970649" target="_blank">doi:10.5281/zenodo.7970649</a>
+  — Servicio de acceso a ERA5 y al pronóstico operativo del sistema.</li>
+
+  <li>IDEAM. <i>Datos Hidrometeorológicos Crudos — Red de Estaciones IDEAM</i>
+  [Conjunto de datos]. Datos Abiertos Colombia.
+  <a href="https://www.datos.gov.co/d/57sv-p2fu" target="_blank">datos.gov.co/d/57sv-p2fu</a>
+  — Observaciones en tiempo casi real de las estaciones Siloé, Universidad del
+  Valle y Base Aérea M.F. Suárez.</li>
+
+  <li>Giglio, L., Schroeder, W., &amp; Justice, C. O. (2016). The Collection 6
+  MODIS active fire detection algorithm and fire products. <i>Remote Sensing of
+  Environment</i>, 178, 31–41.
+  <a href="https://doi.org/10.1016/j.rse.2016.02.054" target="_blank">doi:10.1016/j.rse.2016.02.054</a></li>
+
+  <li>Schroeder, W., Oliva, P., Giglio, L., &amp; Csiszar, I. A. (2014). The New
+  VIIRS 375 m active fire detection data product. <i>Remote Sensing of
+  Environment</i>, 143, 85–96.
+  <a href="https://doi.org/10.1016/j.rse.2013.12.008" target="_blank">doi:10.1016/j.rse.2013.12.008</a>
+  — Junto con [6], productos de puntos calientes de NASA FIRMS usados como
+  registro histórico de incendios y como capa de focos activos.</li>
+
+  <li>Menne, M. J., Durre, I., Vose, R. S., Gleason, B. E., &amp; Houston, T. G.
+  (2012). An overview of the Global Historical Climatology Network-Daily database.
+  <i>Journal of Atmospheric and Oceanic Technology</i>, 29(7), 897–910. — Serie
+  diaria del aeropuerto Alfonso Bonilla Aragón (NOAA/NCEI) usada en la validación
+  de temperatura de ERA5.</li>
+
+  <li>Alcaldía de Santiago de Cali — IDESC. <i>Infraestructura de Datos Espaciales
+  de Santiago de Cali</i>: jerarquización vial, base catastral 2022 y modelo
+  digital de terreno de radar 2.5 m.
+  <a href="https://idesc.cali.gov.co/" target="_blank">idesc.cali.gov.co</a></li>
+
+  <li>Breiman, L. (2001). Random Forests. <i>Machine Learning</i>, 45(1), 5–32.
+  <a href="https://doi.org/10.1023/A:1010933404324" target="_blank">doi:10.1023/A:1010933404324</a>
+  — Algoritmo de aprendizaje del modelo.</li>
+
+  <li>Pedregosa, F., Varoquaux, G., Gramfort, A., et al. (2011). Scikit-learn:
+  Machine Learning in Python. <i>Journal of Machine Learning Research</i>, 12,
+  2825–2830. — Implementación del Random Forest y la calibración isotónica.</li>
+
+  <li>OpenStreetMap contributors (2026). <i>OpenStreetMap</i> [Base de datos],
+  bajo licencia ODbL. <a href="https://www.openstreetmap.org" target="_blank">openstreetmap.org</a>
+  — Ubicación de las estaciones de bomberos (complementada con registro local).</li>
+</ol>
+</section>
 
 </main>
 <footer>SAT Incendios Forestales — Distrito Especial de Santiago de Cali · proyecto de código abierto</footer>
