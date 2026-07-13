@@ -90,10 +90,67 @@ def cell_elevation(lat, lon):
     return float(fetch_cell(lat, lon).get("elevation", 0.0))
 
 
-def cell_dataframe(lat, lon):
+def fetch_cell_recent(lat, lon, hasta):
+    """Extiende la serie más allá de la caché 2009-2023: archivo ERA5 desde
+    2024 (caché refrescable) + pronóstico de los últimos ~90 días. Necesario
+    para incendios nuevos (aprendizaje continuo)."""
+    frames = []
+    fp = os.path.join(WEATHER_CACHE, f"cell_{lat:.1f}_{lon:.1f}_2024plus.json")
+    hoy = pd.Timestamp.today().normalize()
+    fin_arch = (hoy - pd.Timedelta(days=6)).strftime("%Y-%m-%d")
+    data = None
+    if os.path.exists(fp):
+        with open(fp) as f:
+            data = json.load(f)
+        if data["daily"]["time"][-1] < min(str(hasta)[:10], fin_arch):
+            data = None  # caché corta para la fecha pedida: refrescar
+    if data is None:
+        url = ("https://archive-api.open-meteo.com/v1/archive?"
+               f"latitude={lat}&longitude={lon}&start_date=2024-01-01"
+               f"&end_date={fin_arch}&daily={DAILY_VARS}"
+               "&timezone=America%2FBogota")
+        print(f"  descargando extensión 2024+ celda {lat},{lon}")
+        data = _http_retry(url)
+        with open(fp, "w") as f:
+            json.dump(data, f)
+    frames.append(pd.DataFrame(data["daily"]))
+
+    url = ("https://api.open-meteo.com/v1/forecast?"
+           f"latitude={lat}&longitude={lon}&past_days=92&forecast_days=1"
+           f"&daily={DAILY_VARS}&timezone=America%2FBogota")
+    frames.append(pd.DataFrame(_http_retry(url)["daily"]))
+    return frames
+
+
+def _http_retry(url, intentos=8):
+    ultimo = None
+    for i in range(intentos):
+        try:
+            with urllib.request.urlopen(url, timeout=120) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            ultimo = e
+            if e.code == 429 or e.code >= 500:
+                time.sleep(20 * (i + 1))
+            else:
+                raise
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            ultimo = e
+            time.sleep(10 * (i + 1))
+    raise RuntimeError(f"Open-Meteo: fallo persistente: {ultimo}")
+
+
+def cell_dataframe(lat, lon, hasta=None):
+    """Serie diaria con features derivadas. Si `hasta` supera la caché
+    2009-2023, concatena las extensiones recientes antes de derivar (las
+    ventanas móviles cruzan los empalmes sin discontinuidad)."""
     d = fetch_cell(lat, lon)["daily"]
     df = pd.DataFrame(d)
+    if hasta is not None and str(hasta)[:10] > "2023-12-31":
+        for fr in fetch_cell_recent(lat, lon, hasta):
+            df = pd.concat([df, fr], ignore_index=True)
     df["time"] = pd.to_datetime(df["time"])
+    df = df.drop_duplicates(subset="time", keep="first").sort_values("time")
     df = df.set_index("time").astype(float)
     p = df["precipitation_sum"].fillna(0.0)
     df["precip_3d"] = p.rolling(3, min_periods=1).sum()
@@ -122,9 +179,12 @@ _VARMAP = {
 }
 
 
+FECHA_MAX = None  # fecha máxima requerida; la fija main() según los incendios
+
+
 def _cell(key):
     if key not in _CELLS:
-        _CELLS[key] = cell_dataframe(*key)
+        _CELLS[key] = cell_dataframe(*key, hasta=FECHA_MAX)
     return _CELLS[key]
 
 
@@ -242,10 +302,13 @@ def sample_absences(cali_m, fires, n):
     alejados >2 km o >7 días de cualquier incendio registrado."""
     minx, miny, maxx, maxy = cali_m.bounds
     fires_m = fires.to_crs(paths.CRS_M)
-    fdates = pd.to_datetime(fires["fecha"]).values
+    fdates = pd.to_datetime(fires["fecha"], format="mixed").values
     fxy = np.array([(g.x, g.y) for g in fires_m.geometry])
 
-    all_days = pd.date_range("2010-01-01", "2023-12-31", freq="D")
+    # las ausencias cubren el mismo periodo que las presencias (incluidos
+    # los incendios nuevos post-2023)
+    fin = max(pd.Timestamp("2023-12-31"), pd.Timestamp(fdates.max()))
+    all_days = pd.date_range("2010-01-01", fin, freq="D")
     pts, dates = [], []
     while len(pts) < n:
         x = RNG.uniform(minx, maxx)
@@ -266,8 +329,27 @@ def sample_absences(cali_m, fires, n):
     return g
 
 
-def main():
+def load_fires():
+    """Incendios históricos (matriz 2010-2023) + registro incremental
+    (data/incendios_nuevos.csv: reportes en campo y hotspots FIRMS nuevos)."""
     fires = gpd.read_file(os.path.join(paths.DATA, "incendios_historicos.geojson"))
+    fp = os.path.join(paths.DATA, "incendios_nuevos.csv")
+    if os.path.exists(fp):
+        nuevos = pd.read_csv(fp)
+        gn = gpd.GeoDataFrame(
+            nuevos[["fecha"]],
+            geometry=[Point(xy) for xy in zip(nuevos["lon"], nuevos["lat"])],
+            crs=paths.CRS_GEO)
+        fires = pd.concat([fires[["fecha", "geometry"]], gn], ignore_index=True)
+        fires = gpd.GeoDataFrame(fires, crs=paths.CRS_GEO)
+        print(f"incendios nuevos incorporados: {len(gn)}")
+    return fires
+
+
+def main():
+    global FECHA_MAX
+    fires = load_fires()
+    FECHA_MAX = pd.to_datetime(fires["fecha"], format="mixed").max()
     cali_m = gpd.read_file(paths.LOCALIDADES).to_crs(paths.CRS_M).union_all()
 
     absences = sample_absences(cali_m, fires, N_ABS_RATIO * len(fires))

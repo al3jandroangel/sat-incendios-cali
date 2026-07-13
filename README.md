@@ -91,6 +91,22 @@ https://al3jandroangel.github.io/sat-incendios-cali/
   48 h). El MAP_KEY se lee de `data/firms_key.txt` en local (excluido del
   repositorio por .gitignore) y del secret `FIRMS_MAP_KEY` en GitHub Actions.
 
+## Aprendizaje continuo (v5)
+
+Cada incendio nuevo se incorpora al entrenamiento del Random Forest:
+
+- `data/incendios_nuevos.csv` es el registro incremental (reportes en campo +
+  puntos calientes FIRMS). `scripts/09_actualizar_incendios.py` consulta FIRMS
+  (VIIRS SNPP y NOAA-20, confianza nominal/alta, dentro del distrito), descarta
+  duplicados (<1.5 km y ±2 días de un incendio ya registrado) y, si hay nuevos,
+  reconstruye el dataset (con clima ERA5/pronóstico también para fechas
+  posteriores a 2023), reentrena, regenera figuras y mapa, y publica.
+- El Plan B ejecuta este ciclo **automáticamente cada 6 horas** antes de cada
+  actualización, así que todo punto caliente FIRMS nuevo queda involucrado en
+  el modelo a más tardar 6 h después de ser detectado.
+- Reporte manual: `python scripts/09_actualizar_incendios.py --agregar
+  AAAA-MM-DD lat lon "fuente"`.
+
 ## Estaciones en tierra y validación de ERA5 (v2)
 
 `06_validate_era5.py` contrasta ERA5/Open-Meteo con observaciones en tierra
