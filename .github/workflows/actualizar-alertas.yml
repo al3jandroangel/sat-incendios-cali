@@ -41,8 +41,10 @@ jobs:
         run: python scripts/05_predict_daily.py
       - name: Guardar históricos (estaciones y mapas PNG) en el repositorio
         run: |
-          git config user.name "sat-bot"
-          git config user.email "actions@github.com"
+          # identidad oficial del bot de Actions: el correo actions@github.com
+          # atribuiría los commits a la cuenta ajena "actions-user"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase || true
           git add -A data/stations_history.csv data/model_at_stations.csv historico || true
           git diff --cached --quiet || git commit -m "Históricos $(date -u +%F_%H%M)"
