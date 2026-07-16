@@ -198,6 +198,15 @@ alto para predicción de incendios con muestras pequeñas.</p>
   <tr><td>🟠 MEDIA</td><td class="num">25 (24%)</td><td class="num">113</td></tr>
   <tr><td>🟢 BAJA</td><td class="num">10 (9%)</td><td class="num">264</td></tr>
 </table>
+<h3>Desempeño en operación (verificación continua)</h3>
+<p>Desde su puesta en línea, el sistema se autoevalúa: cada vez que se registra un
+incendio nuevo (satelital o reportado en campo), se consulta <b>qué nivel de alerta
+estaba publicado en ese lugar en el momento del inicio</b> y el resultado se guarda
+sin edición posible. Esta es la métrica más exigente: predicciones reales contra
+eventos reales.</p>
+<div class="tiles" id="verif-tiles"><div class="tile"><div class="lbl">Aún sin eventos verificables desde el despliegue.</div></div></div>
+<div id="verif-tabla"></div>
+
 <h3>¿Qué variables pesan más?</h3>
 <div id="importancias"></div>
 <h3>Validación del clima contra estaciones en tierra</h3>
@@ -294,6 +303,8 @@ oficiales de emergencia (línea 123).</div>
 </main>
 <footer>SAT Incendios Forestales — Distrito Especial de Santiago de Cali · proyecto de código abierto</footer>
 
+<!-- Contador de visitas GoatCounter: ver instrucciones en index.html -->
+<!-- <script data-goatcounter="https://CODIGO.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script> -->
 <script>
 fetch('data/modelo_meta.json?nc=' + Date.now(), { cache: 'no-store' })
   .then(r => r.json()).then(d => {
@@ -321,6 +332,27 @@ fetch('data/modelo_meta.json?nc=' + Date.now(), { cache: 'no-store' })
       `<div class="pista"><div class="barra" style="width:${(100 * v / maxV).toFixed(0)}%"></div></div>` +
       `<div class="valor">${(100 * v).toFixed(1)}%</div></div>`).join('');
   });
+
+fetch('data/verificacion.json?nc=' + Date.now(), { cache: 'no-store' })
+  .then(r => r.json()).then(v => {
+    if (!v.total_eventos) return;
+    const n = v.con_mapa_archivado || 1;
+    const pct = x => (100 * x / n).toFixed(0) + '%';
+    document.getElementById('verif-tiles').innerHTML =
+      `<div class="tile"><div class="num">${v.total_eventos}</div><div class="lbl">incendios desde el despliegue (${v.desde})</div></div>` +
+      `<div class="tile"><div class="num">${pct(v.punto_media_o_mas)}</div><div class="lbl">con alerta MEDIA o ALTA en el punto exacto</div></div>` +
+      `<div class="tile"><div class="num">${pct(v.anillo_media_o_mas)}</div><div class="lbl">con alerta MEDIA o ALTA a ≤300 m</div></div>` +
+      `<div class="tile"><div class="num">${pct(v.punto_alta)}</div><div class="lbl">con alerta ALTA en el punto exacto</div></div>`;
+    const colores = { ALTA: 'var(--alta)', MEDIA: 'var(--media)', BAJA: 'var(--baja)' };
+    const chip = niv => niv
+      ? `<b style="color:${colores[niv]}">${niv}</b>` : '<span style="color:var(--muted)">sin mapa</span>';
+    document.getElementById('verif-tabla').innerHTML =
+      '<table><tr><th>Fecha</th><th>Fuente</th><th>Alerta en el punto</th><th>Alerta a ≤300 m</th></tr>' +
+      v.eventos.map(e =>
+        `<tr><td>${e.fecha}</td><td>${e.fuente}</td>` +
+        `<td>${chip(e.nivel_punto)}</td><td>${chip(e.nivel_anillo)}</td></tr>`).join('') +
+      '</table>';
+  }).catch(() => {});
 </script>
 </body>
 </html>

@@ -107,6 +107,21 @@ Cada incendio nuevo se incorpora al entrenamiento del Random Forest:
 - Reporte manual: `python scripts/09_actualizar_incendios.py --agregar
   AAAA-MM-DD lat lon "fuente"`.
 
+## Verificación en operación y visitas (v6)
+
+- **Aciertos del sistema**: cada incendio nuevo se contrasta automáticamente con
+  el mapa que estaba publicado al momento de su inicio (usando el archivo
+  `historico/`): se registra el nivel de alerta en el punto exacto y en un
+  anillo de 300 m en `data/verificacion_predicciones.csv` (inmutable, sin
+  edición) y el resumen se publica en la sección «Desempeño en operación» de
+  metodologia.html.
+- **Visitas a la página**: GitHub Pages no trae analítica. La integración con
+  GoatCounter (gratuito, sin cookies, cumple privacidad) está lista en ambas
+  páginas: crear cuenta en https://www.goatcounter.com/signup, elegir código de
+  sitio y descomentar la línea `data-goatcounter` en `web/index.html` y
+  `web/metodologia.html`. Complemento: GitHub → Insights → Traffic muestra las
+  visitas al repositorio (últimos 14 días).
+
 ## Estaciones en tierra y validación de ERA5 (v2)
 
 `06_validate_era5.py` contrasta ERA5/Open-Meteo con observaciones en tierra

@@ -1,0 +1,19 @@
+{
+ "desde": "2026-07-09",
+ "total_eventos": 1,
+ "con_mapa_archivado": 1,
+ "punto_alta": 0,
+ "punto_media_o_mas": 0,
+ "anillo_media_o_mas": 1,
+ "eventos": [
+  {
+   "fecha": "2026-07-13",
+   "lat": 3.43858,
+   "lon": -76.5527,
+   "fuente": "Reporte en campo (inicio 14:30 COT)",
+   "mapa": "alerta_2026-07-13_1419.png",
+   "nivel_punto": "BAJA",
+   "nivel_anillo": "MEDIA"
+  }
+ ]
+}

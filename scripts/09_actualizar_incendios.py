@@ -27,8 +27,23 @@ sys.path.insert(0, os.path.dirname(__file__))
 import paths
 
 NUEVOS = os.path.join(paths.DATA, "incendios_nuevos.csv")
+VERIF = os.path.join(paths.DATA, "verificacion_predicciones.csv")
 DIST_M = 1500.0
 DIAS = 2
+# Colores de los PNG archivados: el overlay RGBA (alfa 235/200) compuesto
+# sobre blanco aclara los tonos, así que se compara por color más cercano.
+COLORES_REF = {"ALTA": (202, 57, 57), "MEDIA": (250, 175, 54),
+               "BAJA": (91, 153, 94), None: (255, 255, 255)}
+ORDEN = {"BAJA": 0, "MEDIA": 1, "ALTA": 2}
+
+
+def color_a_nivel(px):
+    mejor, dmin = None, 1e9
+    for nivel, ref in COLORES_REF.items():
+        d = sum((int(a) - b) ** 2 for a, b in zip(px, ref))
+        if d < dmin:
+            mejor, dmin = nivel, d
+    return mejor if dmin < 3600 else None  # tolerancia ~60 por canal
 
 
 def firms_key():
@@ -110,6 +125,90 @@ def buscar_firms(dias=10):
     return hallados
 
 
+def _bounds_overlay():
+    """Límites geográficos del overlay (constantes, derivados de la grilla)."""
+    from pyproj import Transformer
+    g = pd.read_parquet(os.path.join(paths.DATA, "grid_static.parquet"))
+    tr = Transformer.from_crs(paths.CRS_M, paths.CRS_GEO, always_xy=True)
+    lon0, lat0 = tr.transform(g["x"].min() - 50, g["y"].min() - 50)
+    lon1, lat1 = tr.transform(g["x"].max() + 50, g["y"].max() + 50)
+    return lat0, lon0, lat1, lon1
+
+
+def verificar_prediccion(fecha, lat, lon, hora="14:00"):
+    """¿Qué nivel de alerta estaba PUBLICADO en ese lugar cuando inició el
+    incendio? Lee el mapa archivado más reciente anterior al evento
+    (historico/, retención 7 días). Devuelve (mapa, nivel_punto, nivel_anillo)."""
+    from PIL import Image
+    hist = os.path.join(paths.PROJ, "historico")
+    objetivo = f"{fecha}_{hora.replace(':', '')}"
+    candidatos = sorted(f for f in os.listdir(hist)
+                        if f.startswith("alerta_") and f.endswith(".png")
+                        and f[7:22].replace(".png", "") <= objetivo)
+    if not candidatos:
+        return None, None, None
+    mapa = candidatos[-1]
+    img = np.array(Image.open(os.path.join(hist, mapa)).convert("RGB"))
+    lat0, lon0, lat1, lon1 = _bounds_overlay()
+    h, w = img.shape[:2]
+    # el PNG archivado lleva una franja de título de 26 px arriba sobre el
+    # mismo lienzo del overlay; la geometría del mapa no cambia
+    col = int((lon - lon0) / (lon1 - lon0) * w)
+    fila = int((lat1 - lat) / (lat1 - lat0) * h)
+
+    def nivel_px(f, c):
+        if not (0 <= f < h and 0 <= c < w):
+            return None
+        return color_a_nivel(tuple(img[f, c]))
+
+    punto = nivel_px(fila, col)
+    anillo = [n for df in (-3, 0, 3) for dc in (-3, 0, 3)
+              if (n := nivel_px(fila + df, col + dc))]
+    anillo_max = (max(anillo, key=lambda n: ORDEN[n]) if anillo else None)
+    return mapa, punto, anillo_max
+
+
+def registrar_verificacion(filas):
+    """Anexa el contraste predicción-vs-evento y publica el resumen web."""
+    reg = (pd.read_csv(VERIF) if os.path.exists(VERIF)
+           else pd.DataFrame(columns=["fecha", "lat", "lon", "fuente", "mapa",
+                                      "nivel_punto", "nivel_anillo"]))
+    for f in filas:
+        mapa, punto, anillo = verificar_prediccion(
+            f["fecha"], f["lat"], f["lon"], f.get("hora", "14:00"))
+        reg = pd.concat([reg, pd.DataFrame([{**{k: f[k] for k in
+                        ("fecha", "lat", "lon", "fuente")},
+                        "mapa": mapa, "nivel_punto": punto,
+                        "nivel_anillo": anillo}])], ignore_index=True)
+    reg = reg.drop_duplicates(subset=["fecha", "lat", "lon"])
+    reg.to_csv(VERIF, index=False)
+    publicar_verificacion(reg)
+    return reg
+
+
+def publicar_verificacion(reg=None):
+    """web/data/verificacion.json: desempeño del sistema en operación."""
+    if reg is None:
+        if not os.path.exists(VERIF):
+            return
+        reg = pd.read_csv(VERIF)
+    con_mapa = reg.dropna(subset=["nivel_punto"])
+    resumen = {
+        "desde": "2026-07-09",
+        "total_eventos": int(len(reg)),
+        "con_mapa_archivado": int(len(con_mapa)),
+        "punto_alta": int((con_mapa["nivel_punto"] == "ALTA").sum()),
+        "punto_media_o_mas": int(con_mapa["nivel_punto"].isin(["MEDIA", "ALTA"]).sum()),
+        "anillo_media_o_mas": int(con_mapa["nivel_anillo"].isin(["MEDIA", "ALTA"]).sum()),
+        "eventos": reg.where(pd.notna(reg), None).to_dict("records"),
+    }
+    with open(os.path.join(paths.WEB, "data", "verificacion.json"), "w",
+              encoding="utf-8") as fo:
+        json.dump(resumen, fo, ensure_ascii=False, indent=1)
+    print(f"verificación: {resumen['punto_media_o_mas']}/{len(con_mapa)} "
+          "eventos con alerta MEDIA+ en el punto")
+
+
 def agregar(filas):
     df = (pd.read_csv(NUEVOS) if os.path.exists(NUEVOS)
           else pd.DataFrame(columns=["fecha", "lat", "lon", "fuente"]))
@@ -152,9 +251,12 @@ def main():
     nuevos += buscar_firms()
     if nuevos:
         agregar(nuevos)
+        registrar_verificacion(nuevos)
         print(f"nuevos incendios registrados: {len(nuevos)}")
         for n in nuevos:
             print("  +", n["fecha"], n["lat"], n["lon"], "-", n["fuente"])
+    else:
+        publicar_verificacion()  # mantiene fresco el resumen web
     if nuevos or "--forzar" in args:
         reentrenar()
         if "--auto" in args:
