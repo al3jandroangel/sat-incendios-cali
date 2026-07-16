@@ -199,7 +199,7 @@ fetch('data/alerta_meta.json?nc=' + Date.now(), { cache: 'no-store' })
     `<a href="metodologia.html">¿Cómo funciona?</a><br>` +
     `Fuentes: clima <a href="https://open-meteo.com/" target="_blank">Open-Meteo/ERA5</a> · ` +
     `estaciones <a href="https://www.datos.gov.co/Ambiente-y-Desarrollo-Sostenible/Datos-Hidrometeorol-gicos-Crudos-Red-de-Estaciones/57sv-p2fu" target="_blank">IDEAM datos.gov.co</a> · ` +
-    `focos <a href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;l:fires_viirs_snpp;@-76.6,3.4,10z" target="_blank">NASA FIRMS</a>`;
+    `focos <a href="https://firms.modaps.eosdis.nasa.gov/map/#d:7days;l:fires_all;@-76.55,3.42,10z" target="_blank">NASA FIRMS</a>`;
 
   const v = encodeURIComponent(meta.generado);
   const overlay = L.imageOverlay('data/alerta_overlay.png?v=' + v,
