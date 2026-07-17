@@ -128,7 +128,7 @@
   <div class="nivel-row"><span class="dot" style="background:var(--alta)"></span> Amenaza alta</div>
   <div class="nivel-row"><span class="dot" style="background:var(--media)"></span> Amenaza media</div>
   <div class="nivel-row"><span class="dot" style="background:var(--baja)"></span> Amenaza baja</div>
-  <div class="nivel-row"><span class="dot" style="background:#7b1fa2; border-radius:50%"></span> Punto caliente 48 h</div>
+  <div class="nivel-row"><span class="dot" style="background:#7b1fa2; border-radius:50%"></span> Punto caliente 48 h (región)</div>
   <div class="nivel-row"><span class="dot" style="background:#0277bd; border-radius:50%"></span> Estación meteorológica</div>
   <div class="nivel-row"><span style="flex:none; width:14px; text-align:center">🚒</span> Estación de bomberos</div>
 </div>
@@ -239,11 +239,17 @@ fetch('data/alerta_meta.json?nc=' + Date.now(), { cache: 'no-store' })
       const capas = { 'Nivel de alerta': overlay, 'Corregimientos': capa };
 
       if (hs) {
-        capas['Puntos calientes 48h'] = L.geoJSON(hs, {
-          pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-            radius: 7, color: '#4a0072', fillColor: '#7b1fa2', fillOpacity: .9, weight: 2
-          }).bindPopup(`<b>Punto caliente VIIRS</b><br>${f.properties.fecha} ${f.properties.hora}` +
-                       `<br>FRP: ${f.properties.frp} MW`)
+        capas['Puntos calientes 48h (región)'] = L.geoJSON(hs, {
+          pointToLayer: (f, latlng) => {
+            const p = f.properties;
+            const conf = { h: 'alta', n: 'nominal', l: 'baja' }[String(p.confianza).toLowerCase()] || p.confianza;
+            return L.circleMarker(latlng, {
+              radius: 7, color: '#4a0072', fillColor: '#7b1fa2', fillOpacity: .9, weight: 2
+            }).bindPopup(`<b>🔥 Punto caliente VIIRS</b><br>` +
+                         `${p.fecha} ${String(p.hora).padStart(4, '0').replace(/(\d\d)(\d\d)/, '$1:$2')} UTC<br>` +
+                         `Satélite: ${p.satelite} · Confianza: ${conf}<br>` +
+                         `Potencia radiativa: ${p.frp} MW`);
+          }
         }).addTo(map);
       }
 

@@ -19,10 +19,24 @@ import datetime as dt
 import io
 import json
 import os
+import socket
 import sys
 import time
 import urllib.error
 import urllib.request
+
+# Los runners de GitHub a veces resuelven hosts de NASA por IPv6 y fallan con
+# "Network is unreachable"; se prefiere IPv4 en todas las conexiones.
+_gai_original = socket.getaddrinfo
+
+
+def _gai_ipv4(*args, **kwargs):
+    res = _gai_original(*args, **kwargs)
+    v4 = [r for r in res if r[0] == socket.AF_INET]
+    return v4 or res
+
+
+socket.getaddrinfo = _gai_ipv4
 
 import joblib
 import numpy as np
@@ -313,35 +327,69 @@ def firms_key():
     return ""
 
 
+HOTSPOTS_REG = os.path.join(paths.DATA, "hotspots_recientes.csv")
+BBOX_REGION = "-77.2,3.0,-76.2,3.8"   # Cali y su región (contexto de propagación)
+
+
 def hotspots_firms():
+    """Capa de puntos calientes con garantía de permanencia de 48 h.
+
+    Cada corrida fusiona las detecciones nuevas de FIRMS (3 satélites VIIRS,
+    región de Cali) con el registro persistente data/hotspots_recientes.csv y
+    publica todo lo detectado en las últimas 48 h. Si NASA no responde en una
+    corrida, los focos ya conocidos permanecen en el mapa hasta expirar."""
+    reg = (pd.read_csv(HOTSPOTS_REG, dtype=str) if os.path.exists(HOTSPOTS_REG)
+           else pd.DataFrame(columns=["fecha", "hora", "lat", "lon",
+                                      "satelite", "confianza", "frp"]))
     key = firms_key()
-    fp = os.path.join(WEBDATA, "hotspots.geojson")
-    if not key:
-        if not os.path.exists(fp):
-            with open(fp, "w") as f:
-                json.dump({"type": "FeatureCollection", "features": []}, f)
-        return 0
-    feats = []
-    for producto in ["VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT"]:
-        url = (f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/"
-               f"{producto}/-76.75,3.25,-76.44,3.56/2")
-        try:
-            with urllib.request.urlopen(url, timeout=90) as r:
-                df = pd.read_csv(io.StringIO(r.read().decode()))
-        except Exception as e:
-            print(f"  aviso FIRMS {producto}: {e}")
-            continue
-        for row in df.itertuples():
-            feats.append({
-                "type": "Feature",
-                "geometry": {"type": "Point",
-                             "coordinates": [float(row.longitude),
-                                             float(row.latitude)]},
-                "properties": {"fecha": str(row.acq_date),
+    if key:
+        nuevas = []
+        for producto in ["VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT",
+                         "VIIRS_NOAA21_NRT"]:
+            url = (f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/"
+                   f"{producto}/{BBOX_REGION}/2")
+            df = None
+            for intento in range(4):
+                try:
+                    with urllib.request.urlopen(url, timeout=90) as r:
+                        df = pd.read_csv(io.StringIO(r.read().decode()))
+                    break
+                except Exception as e:
+                    print(f"  aviso FIRMS {producto} (intento {intento+1}): {e}")
+                    time.sleep(10 * (intento + 1))
+            if df is None:
+                continue
+            for row in df.itertuples():
+                nuevas.append({"fecha": str(row.acq_date),
                                "hora": f"{int(row.acq_time):04d}",
+                               "lat": f"{float(row.latitude):.5f}",
+                               "lon": f"{float(row.longitude):.5f}",
                                "satelite": str(row.satellite),
-                               "frp": float(getattr(row, "frp", 0) or 0)}})
-    with open(fp, "w") as f:
+                               "confianza": str(getattr(row, "confidence", "")),
+                               "frp": str(getattr(row, "frp", 0) or 0)})
+        if nuevas:
+            reg = pd.concat([reg, pd.DataFrame(nuevas)], ignore_index=True)
+            reg = reg.drop_duplicates(subset=["fecha", "hora", "lat", "lon",
+                                              "satelite"])
+
+    # permanencia: solo expiran los focos con más de 48 h desde su detección (UTC)
+    if len(reg):
+        dt_obs = pd.to_datetime(reg["fecha"] + " " + reg["hora"].str.zfill(4),
+                                format="%Y-%m-%d %H%M", utc=True,
+                                errors="coerce")
+        limite = pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=48)
+        reg = reg[dt_obs >= limite]
+    reg.to_csv(HOTSPOTS_REG, index=False)
+
+    feats = [{"type": "Feature",
+              "geometry": {"type": "Point",
+                           "coordinates": [float(r.lon), float(r.lat)]},
+              "properties": {"fecha": r.fecha, "hora": r.hora,
+                             "satelite": r.satelite,
+                             "confianza": r.confianza,
+                             "frp": float(r.frp or 0)}}
+             for r in reg.itertuples()]
+    with open(os.path.join(WEBDATA, "hotspots.geojson"), "w") as f:
         json.dump({"type": "FeatureCollection", "features": feats}, f)
     return len(feats)
 

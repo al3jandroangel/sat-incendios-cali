@@ -1,6 +1,6 @@
 {
   "fecha": "2026-07-16",
-  "generado": "2026-07-16 19:22",
+  "generado": "2026-07-16 19:56",
   "bounds": [
     [
       3.273435421731155,
@@ -31,10 +31,10 @@
   "estaciones": {
     "n": 3,
     "lluvia_observada_mm": 0.0,
-    "ventana": "2026-07-16 07:20",
+    "ventana": "2026-07-16 08:00",
     "correccion_activa": false
   },
-  "hotspots_48h": 1,
+  "hotspots_48h": 9,
   "modelo": {
     "auc_cv": 0.8889,
     "auc_holdout": 0.8488,
