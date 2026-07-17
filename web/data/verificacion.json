@@ -1,10 +1,10 @@
 {
  "desde": "2026-07-09",
- "total_eventos": 1,
- "con_mapa_archivado": 1,
- "punto_alta": 0,
- "punto_media_o_mas": 0,
- "anillo_media_o_mas": 1,
+ "total_eventos": 2,
+ "con_mapa_archivado": 2,
+ "punto_alta": 1,
+ "punto_media_o_mas": 1,
+ "anillo_media_o_mas": 2,
  "eventos": [
   {
    "fecha": "2026-07-13",
@@ -14,6 +14,15 @@
    "mapa": "alerta_2026-07-13_1419.png",
    "nivel_punto": "BAJA",
    "nivel_anillo": "MEDIA"
+  },
+  {
+   "fecha": "2026-07-16",
+   "lat": 3.39641,
+   "lon": -76.49336,
+   "fuente": "NASA FIRMS NOAA-21 13:41 COT + confirmación en campo",
+   "mapa": "alerta_2026-07-16_1324.png",
+   "nivel_punto": "ALTA",
+   "nivel_anillo": "ALTA"
   }
  ]
 }

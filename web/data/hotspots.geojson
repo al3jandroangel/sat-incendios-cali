@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": []}
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-76.49336, 3.39641]}, "properties": {"fecha": "2026-07-16", "hora": "1841", "satelite": "N21", "frp": 4.66}}]}

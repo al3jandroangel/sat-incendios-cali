@@ -322,7 +322,7 @@ def hotspots_firms():
                 json.dump({"type": "FeatureCollection", "features": []}, f)
         return 0
     feats = []
-    for producto in ["VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT"]:
+    for producto in ["VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT"]:
         url = (f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/"
                f"{producto}/-76.75,3.25,-76.44,3.56/2")
         try:

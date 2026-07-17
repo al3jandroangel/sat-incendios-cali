@@ -95,7 +95,7 @@ def buscar_firms(dias=10):
     distrito = zonas.union_all()
     reg = registrados()
     hallados = []
-    for prod in ["VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT"]:
+    for prod in ["VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT"]:
         url = (f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/"
                f"{prod}/-76.75,3.25,-76.44,3.56/{dias}")
         try:
